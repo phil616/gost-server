@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "checks": [
+    "new systemd service is unregistered",
+    "client runs as dedicated unprivileged user",
+    "private client state directory mode 0700",
+    "Edge control socket mode 0660",
+    "Ed25519 enrollment through installed service IPC and TLS proxy",
+    "initial tcp through TLS proxy and installed service",
+    "initial udp through TLS proxy and installed service",
+    "existing TCP survives stopped control service",
+    "client crash recovery tcp through TLS proxy and installed service",
+    "client crash recovery udp through TLS proxy and installed service",
+    "crash recovery preserves private key",
+    "install over running service restarts the updated executable",
+    "upgrade tcp through TLS proxy and installed service",
+    "upgrade udp through TLS proxy and installed service",
+    "upgrade preserves registered identity",
+    "Edge restart with cached policy tcp through TLS proxy and installed service",
+    "Edge restart with cached policy udp through TLS proxy and installed service",
+    "revoking Visitor closes existing installed-service data connection",
+    "uninstall removes binary and unit",
+    "ordinary uninstall retains identity",
+    "reinstall resumes forwarding without reenrollment",
+    "purge removes identity and all client state"
+  ]
+}

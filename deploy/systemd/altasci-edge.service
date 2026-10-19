@@ -1,0 +1,25 @@
+[Unit]
+Description=AltasCI GOST edge
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=altasci-edge
+Group=altasci
+RuntimeDirectory=altasci
+RuntimeDirectoryMode=0750
+StateDirectory=altasci-edge
+StateDirectoryMode=0700
+ExecStart=/opt/altasci/bin/altasci-edge
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+LogNamespace=altasci
+
+[Install]
+WantedBy=multi-user.target

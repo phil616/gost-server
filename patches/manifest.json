@@ -1,0 +1,31 @@
+{
+  "module": "github.com/go-gost/x",
+  "version": "v0.16.0",
+  "license": "MIT",
+  "files": {
+    "handler/tunnel/hooks.go": {
+      "upstream_sha256": null,
+      "patched_sha256": "ba86abc3509b3513bedd4285e01d78418689679f8f68af625b63c1da0d219a8e"
+    },
+    "handler/tunnel/handler.go": {
+      "upstream_sha256": "9ed447599fbc604c5cf7fa303d8b39658e45cfbcd1d90fe8e6d16ab2d74815d9",
+      "patched_sha256": "c02d0410e25f411ed9f3286600ab82d4d71ed1c176ee5abf8fc5f7914a22bc07"
+    },
+    "handler/tunnel/bind.go": {
+      "upstream_sha256": "f2452c848d028033bf40b9c64992b45c0f270e5f8d80c44ad6efdfe5ac811c7f",
+      "patched_sha256": "f3c13d5364b5b8c250f14d2a9ab76d61db04a4710cd1ea6a0245acc2507b26d7"
+    },
+    "handler/tunnel/connect.go": {
+      "upstream_sha256": "92141ec74e972b12f79d4604915b8a754003e86a3e8c40481371b233a9817c7a",
+      "patched_sha256": "f74d69d16f8ec7ee71581fc4f40a480b56b41a4cecb4a97efea213bbd5fbf76a"
+    },
+    "connector/tunnel/bind.go": {
+      "upstream_sha256": "28bbe94ba96d07b4d6ee96dd5cebe6e13a884bcc30eca04762012d670013697f",
+      "patched_sha256": "bd34c8f52323484b70eeefb83e6b33bf00b0a867a97a609cd41b7cd08411bf2d"
+    },
+    "service/service.go": {
+      "upstream_sha256": "2697eca96f66a178c666e46658e38ddf8ba7f372eef2ec4011fb9b6533d89c93",
+      "patched_sha256": "7a2e7b8bed3194f0b6452bd7bbdcd4a049fd618c6dc8e326f98358a6ec8e5392"
+    }
+  }
+}

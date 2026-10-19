@@ -1,0 +1,57 @@
+?   	github.com/altasci/altascitunnel/cmd/altasci-control	[no test files]
+?   	github.com/altasci/altascitunnel/cmd/altasci-edge	[no test files]
+?   	github.com/altasci/altascitunnel/cmd/altascitunnel	[no test files]
+=== RUN   TestInvalidConfigurationDoesNotAdvanceOrReplace
+--- PASS: TestInvalidConfigurationDoesNotAdvanceOrReplace (0.00s)
+PASS
+ok  	github.com/altasci/altascitunnel/internal/agent	1.023s
+=== RUN   TestPolicyHashMismatchNeverAcknowledgesOperation
+--- PASS: TestPolicyHashMismatchNeverAcknowledgesOperation (0.26s)
+=== RUN   TestEnrollmentProofExpiryAndConcurrentConsumption
+--- PASS: TestEnrollmentProofExpiryAndConcurrentConsumption (0.02s)
+=== RUN   TestTLSRegistrationRecoveryConfigAndIdempotency
+--- PASS: TestTLSRegistrationRecoveryConfigAndIdempotency (0.93s)
+=== RUN   TestRecoveryKeepsIdentityButRevokesVisitorsAndRotatesProviders
+--- PASS: TestRecoveryKeepsIdentityButRevokesVisitorsAndRotatesProviders (0.00s)
+PASS
+ok  	github.com/altasci/altascitunnel/internal/control	2.234s
+=== RUN   TestRoleScopeGenerationAndLiveRevocation
+--- PASS: TestRoleScopeGenerationAndLiveRevocation (0.00s)
+=== RUN   TestPolicySnapshotRestartsAndHashConflicts
+--- PASS: TestPolicySnapshotRestartsAndHashConflicts (0.00s)
+PASS
+ok  	github.com/altasci/altascitunnel/internal/edge	1.017s
+?   	github.com/altasci/altascitunnel/internal/gostutil	[no test files]
+?   	github.com/altasci/altascitunnel/internal/host	[no test files]
+=== RUN   TestDaemonWSSRegistrationDataAndControlOutage
+--- PASS: TestDaemonWSSRegistrationDataAndControlOutage (3.70s)
+=== RUN   TestNativeGostTCPUDPAndFixedTarget
+=== RUN   TestNativeGostTCPUDPAndFixedTarget/udp
+=== RUN   TestNativeGostTCPUDPAndFixedTarget/tcp
+--- PASS: TestNativeGostTCPUDPAndFixedTarget (0.53s)
+    --- PASS: TestNativeGostTCPUDPAndFixedTarget/udp (0.22s)
+    --- PASS: TestNativeGostTCPUDPAndFixedTarget/tcp (0.26s)
+=== RUN   TestScale100Clients1000Tunnels
+    scale_test.go:23: set ALTASCI_STRESS=1 and GOST_BINARY
+--- SKIP: TestScale100Clients1000Tunnels (0.00s)
+PASS
+ok  	github.com/altasci/altascitunnel/internal/integration	5.285s
+?   	github.com/altasci/altascitunnel/internal/integration/systemfixture	[no test files]
+?   	github.com/altasci/altascitunnel/internal/localfile	[no test files]
+=== RUN   TestTargetIPv4AndHash
+--- PASS: TestTargetIPv4AndHash (0.00s)
+PASS
+ok  	github.com/altasci/altascitunnel/internal/model	1.021s
+=== RUN   TestExactSequencePersistenceResetAndCancellation
+--- PASS: TestExactSequencePersistenceResetAndCancellation (0.00s)
+PASS
+ok  	github.com/altasci/altascitunnel/internal/retry	1.019s
+=== RUN   TestVaultBindingAndAuthentication
+--- PASS: TestVaultBindingAndAuthentication (0.95s)
+PASS
+ok  	github.com/altasci/altascitunnel/internal/secure	1.974s
+=== RUN   TestPostgresMigrationsTransactionsAndConstraints
+--- PASS: TestPostgresMigrationsTransactionsAndConstraints (0.24s)
+PASS
+ok  	github.com/altasci/altascitunnel/internal/store	1.259s
+?   	github.com/altasci/altascitunnel/internal/store/db	[no test files]

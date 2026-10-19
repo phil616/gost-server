@@ -1,0 +1,48 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20261018232821
+Username: A35815B6-10B7-4\WDAGUtilityAccount
+RunAs User: A35815B6-10B7-4\WDAGUtilityAccount
+Configuration Name: 
+Machine: A35815B6-10B7-4 (Microsoft Windows NT 10.0.26100.0)
+Host Application: powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\input\test-windows-sandbox.ps1
+Process ID: 6564
+PSVersion: 5.1.26100.9711
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9711
+BuildVersion: 10.0.26100.9711
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is C:\results\transcript.txt
+
+PASS: install MSI exit=0
+PASS: SCM runs service as LocalService
+PASS: new installation is unregistered
+PASS: system PATH installed
+
+PASS: registered using installed service IPC
+PASS: server assigned persistent ClientID
+PASS: install tcp WSS fixed-target roundtrip
+PASS: install udp WSS fixed-target roundtrip
+PASS: SCM automatically restarts crashed service
+PASS: repair MSI exit=0
+PASS: repair preserves identity
+PASS: repair tcp WSS fixed-target roundtrip
+PASS: repair udp WSS fixed-target roundtrip
+PASS: upgrade MSI exit=0
+PASS: upgrade preserves registered identity
+PASS: upgrade tcp WSS fixed-target roundtrip
+PASS: upgrade udp WSS fixed-target roundtrip
+PASS: uninstall MSI exit=0
+PASS: uninstall removes service
+PASS: uninstall removes executable
+PASS: uninstall removes identity
+PASS: uninstall removes credentials/config
+PASS: uninstall removes system PATH entry
+**********************
+Windows PowerShell transcript end
+End time: 20261018232902
+**********************

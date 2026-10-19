@@ -1,0 +1,22 @@
+[Unit]
+Description=AltasCI control platform
+After=network-online.target postgresql.service altasci-edge.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=altasci-control
+Group=altasci
+EnvironmentFile=/etc/altasci/control.env
+WorkingDirectory=/opt/altasci
+ExecStart=/opt/altasci/bin/altasci-control serve --public-url ${ALTASCI_PUBLIC_URL}
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+LogNamespace=altasci
+
+[Install]
+WantedBy=multi-user.target

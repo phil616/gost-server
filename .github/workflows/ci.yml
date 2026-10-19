@@ -1,0 +1,186 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  web:
+    name: Web, documentation and license review
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: node scripts/check-docs.cjs
+      - run: node --test scripts/release-tools.test.cjs
+      - id: metadata
+        run: node scripts/release-metadata.cjs
+      - run: npm ci --no-audit --no-fund
+        working-directory: web
+      - run: npm run typecheck && npm test && npm run build
+        working-directory: web
+        env:
+          ALTASCI_VERSION: ${{ steps.metadata.outputs.version }}
+      - name: Collect distributed dependency licenses and MPL sources
+        run: |
+          node scripts/collect-licenses.cjs web/dist/licenses web
+          node scripts/verify-licenses.cjs web/dist/licenses
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: frontend-internal
+          path: web/dist/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 3
+
+  go:
+    name: Linux integration, race and generated code
+    needs: web
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: integration-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://postgres:integration-only@127.0.0.1:5432/postgres?sslmode=disable
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: frontend-internal
+          path: web/dist
+      - name: Download official GOST compatibility binary
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl --retry 3 -fsSLO https://github.com/go-gost/gost/releases/download/v3.3.0/gost_3.3.0_linux_amd64.tar.gz
+          curl --retry 3 -fsSLO https://github.com/go-gost/gost/releases/download/v3.3.0/checksums.txt
+          grep '  gost_3.3.0_linux_amd64.tar.gz$' checksums.txt | sha256sum -c -
+          tar -xzf gost_3.3.0_linux_amd64.tar.gz gost
+          echo "GOST_BINARY=$PWD/gost" >> "$GITHUB_ENV"
+      - name: Locate hosted Chromium
+        run: |
+          echo "CHROME_BINARY=$(command -v google-chrome)" >> "$GITHUB_ENV"
+          google-chrome --version
+      - run: go vet ./...
+      - name: PostgreSQL, official Visitor, browser and race tests
+        env:
+          ALTASCI_BROWSER: '1'
+        run: go test -race -count=1 -timeout 15m ./...
+      - run: go run github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0 generate
+      - run: git diff --exit-code -- internal/store/db
+      - run: go build ./cmd/...
+
+  package:
+    name: Windows tests and packaged distribution
+    needs: [web, go]
+    runs-on: windows-2022
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '8.0.x'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: frontend-internal
+          path: web/dist
+      - id: metadata
+        run: node scripts/release-metadata.cjs
+      - name: Download official Windows GOST
+        run: |
+          $testTools = Join-Path $env:RUNNER_TEMP 'gost'
+          New-Item -ItemType Directory -Path $testTools | Out-Null
+          $archive = Join-Path $testTools 'gost_3.3.0_windows_amd64.zip'
+          Invoke-WebRequest https://github.com/go-gost/gost/releases/download/v3.3.0/gost_3.3.0_windows_amd64.zip -OutFile $archive
+          Invoke-WebRequest https://github.com/go-gost/gost/releases/download/v3.3.0/checksums.txt -OutFile (Join-Path $testTools 'checksums.txt')
+          $checksums = Get-Content -LiteralPath (Join-Path $testTools 'checksums.txt') -Raw
+          $line = @($checksums -split "`n" | Where-Object {$_ -match '  gost_3.3.0_windows_amd64.zip\s*$'})
+          if ($line.Count -ne 1) {throw 'Missing upstream checksum'}
+          if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne ($line[0] -split '\s+')[0]) {throw 'GOST checksum mismatch'}
+          Expand-Archive -LiteralPath $archive -DestinationPath $testTools
+          "GOST_BINARY=$testTools/gost.exe" >> $env:GITHUB_ENV
+      - run: go test -count=1 -timeout 10m ./...
+      - name: Build Windows amd64 and Linux amd64/arm64
+        run: |
+          $env:CGO_ENABLED = '0'
+          foreach ($platform in @('windows-amd64','linux-amd64','linux-arm64')) {
+            $env:GOOS,$env:GOARCH = $platform.Split('-')
+            $output = if ($env:GOOS -eq 'windows') {'bin'} else {"bin/$platform"}
+            New-Item -ItemType Directory -Path $output -Force | Out-Null
+            foreach ($app in @('altasci-control','altasci-edge','altascitunnel')) {
+              $extension = if ($env:GOOS -eq 'windows') {'.exe'} else {''}
+              go build -mod=readonly -trimpath -o "$output/$app$extension" "./cmd/$app"
+              if ($LASTEXITCODE -ne 0) {throw "Build failed: $platform/$app"}
+            }
+          }
+          Remove-Item Env:GOOS,Env:GOARCH,Env:CGO_ENABLED
+      - run: dotnet tool install --global wix --version 4.0.6
+      - name: Build MSI with embedded licenses and source materials
+        env:
+          VERSION: ${{ steps.metadata.outputs.version }}
+        run: ./scripts/build-msi.ps1 -Version $env:VERSION
+      - name: Package, hash and verify all release payloads
+        env:
+          VERSION: ${{ steps.metadata.outputs.version }}
+        run: |
+          ./scripts/package.ps1 -Version $env:VERSION
+          ./scripts/test-release-package.ps1 -Archive "dist/altasci-$env:VERSION.zip"
+          if (git status --porcelain --untracked-files=normal) {throw 'Build unexpectedly modified source files'}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-packages
+          path: |
+            dist/*.zip
+            dist/*.zip.sha256
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14

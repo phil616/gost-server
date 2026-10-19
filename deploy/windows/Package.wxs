@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <?ifndef Version?><?define Version="0.1.0"?><?endif?>
+  <Package Name="AltasCI Tunnel" Manufacturer="AltasCI" Version="$(var.Version)" UpgradeCode="45F17651-6D66-4C3A-9E8A-4347D7BB6096" Scope="perMachine">
+    <MajorUpgrade DowngradeErrorMessage="A newer AltasCI Tunnel is already installed." Schedule="afterInstallExecute" />
+    <MediaTemplate EmbedCab="yes" />
+    <StandardDirectory Id="ProgramFiles64Folder"><Directory Id="INSTALLFOLDER" Name="AltasCITunnel">
+      <Component Id="Agent" Guid="CC3BCB16-6AAC-45E7-B1FD-951F12A05380" Bitness="always64">
+        <File Id="AgentExecutable" Source="$(var.SourceDir)\altascitunnel.exe" KeyPath="yes" />
+        <Environment Id="AgentPath" Name="PATH" Value="[INSTALLFOLDER]" System="yes" Action="set" Part="last" Permanent="no" />
+        <ServiceInstall Id="AgentService" Name="AltasCITunnel" DisplayName="AltasCI Tunnel" Description="Managed GOST reverse tunnel connector" Type="ownProcess" Start="auto" ErrorControl="normal" Account="NT AUTHORITY\LocalService" Arguments="run" />
+        <ServiceControl Id="AgentServiceControl" Name="AltasCITunnel" Start="install" Stop="both" Remove="uninstall" Wait="yes" />
+      </Component>
+      <Component Id="LegalMaterials" Guid="11D0429B-8F06-45F9-8021-4C165015B90A" Bitness="always64">
+        <File Id="ProjectLicense" Source="$(var.ProjectRoot)\LICENSE" KeyPath="yes" />
+        <File Id="DependencyNotice" Source="$(var.ProjectRoot)\THIRD_PARTY_NOTICES.md" />
+        <File Id="DependencyLicenses" Source="$(var.SourceDir)\installer-licenses.zip" Name="licenses.zip" />
+      </Component>
+    </Directory></StandardDirectory>
+    <CustomAction Id="PrepareService" FileRef="AgentExecutable" ExeCommand="service-prepare" Execute="deferred" Impersonate="no" Return="check" />
+    <CustomAction Id="PurgeState" FileRef="AgentExecutable" ExeCommand="purge-state" Execute="deferred" Impersonate="no" Return="check" />
+    <InstallExecuteSequence>
+      <Custom Action="PrepareService" After="InstallServices" Condition="NOT REMOVE~=&quot;ALL&quot;" />
+      <Custom Action="PurgeState" Before="RemoveFiles" Condition="REMOVE~=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+    </InstallExecuteSequence>
+    <Feature Id="Main" Title="AltasCI Tunnel" Level="1"><ComponentRef Id="Agent" /><ComponentRef Id="LegalMaterials" /></Feature>
+  </Package>
+</Wix>

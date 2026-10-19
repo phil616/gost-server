@@ -1,0 +1,22 @@
+[Unit]
+Description=AltasCI managed GOST connector
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=altascitunnel
+Group=altascitunnel
+StateDirectory=altascitunnel
+StateDirectoryMode=0700
+ExecStart=/usr/local/bin/altascitunnel run
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

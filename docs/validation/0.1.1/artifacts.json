@@ -1,0 +1,27 @@
+[
+  {
+    "file": "bin/altascitunnel.exe",
+    "runtime_tested": true,
+    "sha256": "d664b8cd8137b7949188ba6d215ba1ffe4571e3d95ee241a9c2d1440f64a520a"
+  },
+  {
+    "file": "bin/linux-amd64/altascitunnel",
+    "runtime_tested": true,
+    "sha256": "0b995eb2734063e05616c74a6cf51c46a4d675780e44f57f8638c467fc4460cc"
+  },
+  {
+    "file": "bin/linux-arm64/altascitunnel",
+    "runtime_tested": false,
+    "sha256": "596916facfeef115ea942c9e26ace9ffe3aa3190f39111538baa2b10deb0eb11"
+  },
+  {
+    "file": "bin/AltasCITunnel-0.1.0-x64.msi",
+    "runtime_tested": true,
+    "sha256": "de730c986a09e46fe42301b8e42f033ab07daf42472bc022e4f92dcc1af74eb2"
+  },
+  {
+    "file": "bin/AltasCITunnel-0.1.1-x64.msi",
+    "runtime_tested": true,
+    "sha256": "c1583d1e16cb1c90902448d67d695b311efb083e777ec40496a9273dcff02a7f"
+  }
+]

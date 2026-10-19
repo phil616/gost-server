@@ -1,0 +1,30 @@
+{
+  "completed": "2026-10-18T23:29:02.8379554+08:00",
+  "os": "Microsoft Windows 11 企业版",
+  "checks": [
+    "install MSI exit=0",
+    "SCM runs service as LocalService",
+    "new installation is unregistered",
+    "system PATH installed",
+    "registered using installed service IPC",
+    "server assigned persistent ClientID",
+    "install tcp WSS fixed-target roundtrip",
+    "install udp WSS fixed-target roundtrip",
+    "SCM automatically restarts crashed service",
+    "repair MSI exit=0",
+    "repair preserves identity",
+    "repair tcp WSS fixed-target roundtrip",
+    "repair udp WSS fixed-target roundtrip",
+    "upgrade MSI exit=0",
+    "upgrade preserves registered identity",
+    "upgrade tcp WSS fixed-target roundtrip",
+    "upgrade udp WSS fixed-target roundtrip",
+    "uninstall MSI exit=0",
+    "uninstall removes service",
+    "uninstall removes executable",
+    "uninstall removes identity",
+    "uninstall removes credentials/config",
+    "uninstall removes system PATH entry"
+  ],
+  "passed": true
+}

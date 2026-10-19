@@ -1,0 +1,439 @@
+openapi: 3.1.0
+info:
+  title: AltasCI Tunnel Control API
+  version: 0.1.1
+  license:
+    name: MIT
+    identifier: MIT
+  contact:
+    name: '@phil616'
+    url: https://github.com/phil616
+  description: >-
+    Current single-Edge management API. Cookie sessions authenticate administrators;
+    mutations require CSRF and validate Origin when provided. Accepted operations
+    confirm durable intent; applied operations confirm Edge policy, not target health.
+servers:
+  - url: /api/v1
+security:
+  - session: []
+paths:
+  /auth/login:
+    post:
+      summary: Start administrator session
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: {type: string}
+                password: {type: string}
+      responses:
+        '200':
+          description: Secure HttpOnly session cookie and CSRF
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AdminSession'}
+        '401': {$ref: '#/components/responses/Error'}
+  /auth/me:
+    get:
+      summary: Get administrator username and CSRF token
+      responses:
+        '200':
+          description: Session identity and CSRF
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AdminSession'}
+  /auth/logout:
+    post:
+      parameters: [{$ref: '#/components/parameters/CSRF'}]
+      responses:
+        '200': {description: Session removed}
+  /enrollments:
+    post:
+      summary: Create a single-use ten-minute enrollment token
+      parameters: [{$ref: '#/components/parameters/CSRF'}]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+      responses:
+        '201':
+          description: Ten-minute single-use token shown only in this response
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Enrollment'}
+  /enrollments/{id}:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    delete:
+      parameters: [{$ref: '#/components/parameters/CSRF'}]
+      responses:
+        '200': {description: Enrollment revoked}
+  /clients:
+    get:
+      parameters: [{$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/PageSize'}]
+      responses:
+        '200':
+          description: Paginated devices without public keys
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ClientPage'}
+  /clients/{id}:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    get:
+      responses:
+        '200':
+          description: Device detail without public key
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Client'}
+        '404': {$ref: '#/components/responses/Error'}
+  /clients/{id}/revoke:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    post:
+      parameters: [{$ref: '#/components/parameters/CSRF'}, {$ref: '#/components/parameters/Idempotency'}]
+      responses:
+        '202': {$ref: '#/components/responses/Accepted'}
+  /clients/{id}/tunnels:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    post:
+      summary: Allocate TunnelID and enqueue desired configuration
+      parameters: [{$ref: '#/components/parameters/CSRF'}, {$ref: '#/components/parameters/Idempotency'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TunnelInput'}
+      responses:
+        '202': {$ref: '#/components/responses/Accepted'}
+  /tunnels:
+    get:
+      parameters:
+        - {$ref: '#/components/parameters/Page'}
+        - {$ref: '#/components/parameters/PageSize'}
+        - {name: client_id, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: Paginated tunnels with separate data connection and target-health states
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TunnelPage'}
+  /tunnels/{id}:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    get:
+      responses:
+        '200':
+          description: Tunnel detail and numeric resource version in ETag
+          headers:
+            ETag: {schema: {type: string}, description: Current numeric resource version}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Tunnel'}
+    patch:
+      parameters:
+        - {$ref: '#/components/parameters/CSRF'}
+        - {$ref: '#/components/parameters/Idempotency'}
+        - {name: If-Match, in: header, required: true, description: Current numeric resource version, schema: {type: string}}
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TunnelPatch'}
+      responses:
+        '202': {$ref: '#/components/responses/Accepted'}
+        '409': {$ref: '#/components/responses/Error'}
+    delete:
+      parameters: [{$ref: '#/components/parameters/CSRF'}, {$ref: '#/components/parameters/Idempotency'}]
+      responses:
+        '202': {$ref: '#/components/responses/Accepted'}
+  /tunnels/{id}/access-credentials:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    get:
+      parameters: [{$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/PageSize'}]
+      responses:
+        '200':
+          description: Paginated Visitor metadata; digest and ciphertext are redacted to empty strings
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CredentialPage'}
+    post:
+      parameters: [{$ref: '#/components/parameters/CSRF'}, {$ref: '#/components/parameters/Idempotency'}]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expires_at: {type: [string, 'null'], format: date-time}
+      responses:
+        '202': {$ref: '#/components/responses/Accepted'}
+  /access-credentials/{id}/reveal:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    post:
+      summary: Audit and reveal encrypted Visitor secret and native GOST configuration
+      parameters: [{$ref: '#/components/parameters/CSRF'}]
+      responses:
+        '200':
+          description: Private credential material; Cache-Control no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username: {type: string}
+                  secret: {type: string}
+                  command: {type: string}
+                  yaml: {type: string}
+  /access-credentials/{id}:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    delete:
+      summary: Revoke Visitor credential, including live sessions
+      parameters: [{$ref: '#/components/parameters/CSRF'}, {$ref: '#/components/parameters/Idempotency'}]
+      responses:
+        '202': {$ref: '#/components/responses/Accepted'}
+  /operations/{id}:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    get:
+      responses:
+        '200':
+          description: Operation state; applied does not imply Client connected
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Operation'}
+  /audit-events:
+    get:
+      parameters: [{$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/PageSize'}]
+      responses:
+        '200':
+          description: Newest-first paginated audit events
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AuditPage'}
+  /edge/status:
+    get:
+      responses:
+        '200':
+          description: Latest Edge runtime and health error
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EdgeStatus'}
+components:
+  securitySchemes:
+    session: {type: apiKey, in: cookie, name: altasci_session}
+  parameters:
+    ID: {name: id, in: path, required: true, schema: {type: string}}
+    Page: {name: page, in: query, schema: {type: integer, minimum: 1, default: 1}}
+    PageSize: {name: page_size, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+    CSRF: {name: X-CSRF-Token, in: header, required: true, schema: {type: string}}
+    Idempotency: {name: Idempotency-Key, in: header, schema: {type: string}, description: Reusing a key with a different method/path/body returns 409; retained 180 days}
+  schemas:
+    AdminSession:
+      type: object
+      required: [username, csrf]
+      properties:
+        username: {type: string}
+        csrf: {type: string}
+    Enrollment:
+      type: object
+      required: [id, token, expires_at, command]
+      properties:
+        id: {type: string}
+        token: {type: string, description: One-time plaintext enrollment token}
+        expires_at: {type: string, format: date-time}
+        command: {type: string}
+    Client:
+      type: object
+      required: [id, name, state, revision, received_revision, applied_revision]
+      properties:
+        id: {type: string}
+        name: {type: string}
+        os: {type: string}
+        arch: {type: string}
+        version: {type: string, description: Device-reported software version}
+        state: {type: string, enum: [online, stale, offline, revoked]}
+        revoked: {type: boolean}
+        revision: {type: integer, format: int64}
+        received_revision: {type: integer, format: int64}
+        applied_revision: {type: integer, format: int64}
+        last_seen: {type: string, format: date-time}
+        created_at: {type: string, format: date-time}
+        runtime:
+          type: [array, 'null']
+          items: {$ref: '#/components/schemas/TunnelRuntime'}
+    ClientPage:
+      type: object
+      required: [items, total]
+      properties:
+        total: {type: integer, minimum: 0}
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/Client'}
+    Tunnel:
+      type: object
+      required: [id, client_id, protocol, target_ip, target_port, enabled, generation, version, state]
+      properties:
+        id: {type: string}
+        client_id: {type: string}
+        name: {type: string}
+        protocol: {type: string, enum: [tcp, udp]}
+        target_ip: {type: string, format: ipv4}
+        target_port: {type: integer, minimum: 1, maximum: 65535}
+        enabled: {type: boolean}
+        deleted: {type: boolean}
+        generation: {type: integer, format: int64}
+        version: {type: integer, format: int64}
+        created_at: {type: string, format: date-time}
+        state:
+          type: string
+          description: Edge-derived or device-reported state; connected is Provider Bind, not target health
+          examples: [pending, connected, connecting, backoff, disabled, unknown, error]
+        active_connections: {type: integer, description: Tracked Visitor connections for the current generation}
+        target_health: {type: string, enum: [unknown]}
+        last_error: {type: string}
+        next_retry_at: {type: string, format: date-time}
+    TunnelPage:
+      type: object
+      required: [items, total]
+      properties:
+        total: {type: integer, minimum: 0}
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/Tunnel'}
+    TunnelRuntime:
+      type: object
+      properties:
+        tunnel_id: {type: string}
+        generation: {type: integer, format: int64}
+        state: {type: string}
+        error: {type: string}
+        next_retry_at: {type: string, format: date-time}
+        retry_count: {type: integer, minimum: 0}
+        input_bytes: {type: integer, minimum: 0}
+        output_bytes: {type: integer, minimum: 0}
+        updated_at: {type: string, format: date-time}
+    CredentialMetadata:
+      type: object
+      properties:
+        id: {type: string}
+        client_id: {type: string}
+        tunnel_id: {type: string}
+        username: {type: string}
+        kind: {type: string, enum: [visitor]}
+        digest: {type: string, const: '', description: Redacted compatibility field}
+        ciphertext: {type: string, const: '', description: Redacted compatibility field}
+        generation: {type: integer, format: int64}
+        expires_at: {type: string, format: date-time}
+        revoked: {type: boolean}
+        created_at: {type: string, format: date-time}
+    CredentialPage:
+      type: object
+      required: [items, total]
+      properties:
+        total: {type: integer, minimum: 0}
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/CredentialMetadata'}
+    Audit:
+      type: object
+      required: [id, actor, action, resource, at]
+      properties:
+        id: {type: string}
+        actor: {type: string}
+        action: {type: string}
+        resource: {type: string}
+        at: {type: string, format: date-time}
+    AuditPage:
+      type: object
+      required: [items, total]
+      properties:
+        total: {type: integer, minimum: 0}
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/Audit'}
+    Operation:
+      type: object
+      required: [id, resource, policy_revision, state, created_at]
+      properties:
+        id: {type: string}
+        resource: {type: string}
+        policy_revision: {type: integer, format: int64}
+        state: {type: string, enum: [pending, applied]}
+        error: {type: string}
+        created_at: {type: string, format: date-time}
+        idempotency_key: {type: string}
+        request_hash: {type: string}
+        result: {description: Persisted result of the original idempotent request}
+    EdgeSession:
+      type: object
+      properties:
+        id: {type: string}
+        credential_id: {type: string}
+        tunnel_id: {type: string}
+        generation: {type: integer, format: int64}
+        kind: {type: string, enum: [provider, visitor]}
+        connected: {type: boolean}
+        opened_at: {type: string, format: date-time}
+        input_bytes: {type: integer, minimum: 0}
+        output_bytes: {type: integer, minimum: 0}
+    EdgeRuntime:
+      type: object
+      properties:
+        epoch: {type: string}
+        sequence: {type: integer, minimum: 0}
+        revision: {type: integer, format: int64}
+        policy_hash: {type: string}
+        updated_at: {type: string, format: date-time}
+        sessions:
+          type: [array, 'null']
+          items: {$ref: '#/components/schemas/EdgeSession'}
+    EdgeStatus:
+      type: object
+      required: [runtime, error, healthy]
+      properties:
+        runtime: {$ref: '#/components/schemas/EdgeRuntime'}
+        error: {type: string}
+        healthy: {type: boolean, description: Fresh Edge snapshot without a coordination error}
+    TunnelInput:
+      type: object
+      additionalProperties: false
+      required: [protocol, target_ip, target_port]
+      properties:
+        name: {type: string}
+        protocol: {type: string, enum: [tcp, udp]}
+        target_ip: {type: string, format: ipv4}
+        target_port: {type: integer, minimum: 1, maximum: 65535}
+        enabled: {type: boolean, default: true}
+    TunnelPatch:
+      type: object
+      additionalProperties: false
+      properties:
+        name: {type: string}
+        protocol: {type: string, enum: [tcp, udp]}
+        target_ip: {type: string, format: ipv4}
+        target_port: {type: integer, minimum: 1, maximum: 65535}
+        enabled: {type: boolean}
+  responses:
+    Error:
+      description: Request rejected (400/401/403/404/409) or dependencies unavailable (503)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: {type: string}
+    Accepted:
+      description: Durable operation accepted, not yet necessarily effective at Edge
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              operation_id: {type: string}
+              resource_id: {type: string}
+              policy_revision: {type: integer}
+              state: {type: string, enum: [pending, applied]}

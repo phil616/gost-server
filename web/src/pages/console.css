@@ -1,0 +1,54 @@
+:root {
+  color-scheme: light;
+}
+body {
+  margin: 0;
+  background: #f3f6f6;
+}
+.login-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(ellipse at 15% 20%, #16483f 0%, transparent 45%), #101e27;
+  padding: 24px;
+  box-sizing: border-box;
+}
+.login-card {
+  width: min(430px, 100%);
+  background: #fff;
+  padding: 44px;
+  border-radius: 16px;
+  box-shadow: 0 24px 80px #0004;
+  box-sizing: border-box;
+}
+.eyebrow {
+  font-size: 10px;
+  color: #167a72;
+  letter-spacing: 1.6px;
+  font-weight: 700;
+}
+.login-card .ant-form {
+  margin: 28px 0;
+}
+.login-card .ant-btn-primary {
+  background: #167a72;
+}
+.code-block {
+  overflow: auto;
+  max-height: 420px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #eff5f4;
+  color: #173b36;
+  padding: 18px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.loading-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  color: #167a72;
+}
