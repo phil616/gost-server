@@ -10,11 +10,12 @@ require (
 	github.com/go-gost/relay v0.7.0
 	github.com/go-gost/x v0.16.0
 	github.com/google/uuid v1.6.0
-	github.com/jackc/pgx/v5 v5.7.6
+	github.com/jackc/pgx/v5 v5.11.0
 	github.com/kardianos/service v1.3.0
 	github.com/pressly/goose/v3 v3.24.3
 	golang.org/x/crypto v0.54.0
 	golang.org/x/sys v0.49.0
+	golang.org/x/time v0.12.0
 )
 
 require (
@@ -82,7 +83,6 @@ require (
 	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/term v0.45.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
-	golang.org/x/time v0.12.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260723215102-3fe39f3c1018 // indirect
 	google.golang.org/grpc v1.82.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
