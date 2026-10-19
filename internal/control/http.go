@@ -116,6 +116,11 @@ func (s *Server) Handler() http.Handler {
 	})
 	return r
 }
+
+// This fixed, valid Argon2id encoding is only used to give unknown usernames
+// the same password verification cost as known usernames. It is not a secret.
+const dummyPasswordHash = "argon2id$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	// A bounded process-wide budget remains effective behind the single local
 	// reverse proxy without trusting arbitrary X-Forwarded-For headers.
@@ -148,7 +153,13 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
-	if admin.ID == "" || !secure.CheckPassword(body.Password, admin.PasswordHash) {
+	passwordHash := admin.PasswordHash
+	if admin.ID == "" {
+		passwordHash = dummyPasswordHash
+	}
+	// Verify before checking the ID so unknown usernames also run Argon2id.
+	passwordOK := secure.CheckPassword(body.Password, passwordHash)
+	if admin.ID == "" || !passwordOK {
 		s.fail(w, bad(401, "invalid credentials"))
 		return
 	}

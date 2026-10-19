@@ -19,6 +19,8 @@
 
 Cookie 默认 Secure、HttpOnly；写操作需要 X-CSRF-Token，有 Origin 时还比较完整 host:port。因此高端口反代必须保留外部 Host。登录有进程级速率预算及并发限制，不信任任意转发 IP 头作为认证依据。
 
+用户名不存在时也使用固定 dummy hash 执行同参数的 Argon2id 校验，避免通过跳过密码派生产生的明显耗时差异枚举管理员用户名；认证失败统一返回相同错误。
+
 `--dev-http` 只用于本机开发场景，会关闭 Secure Cookie；远程测试仍使用已有 HTTPS 入口。
 
 ## 设备注册
