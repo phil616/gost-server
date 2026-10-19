@@ -3,3 +3,4 @@
 *.msi binary
 *.png binary
 *.zip binary
+dev/

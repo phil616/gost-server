@@ -43,6 +43,7 @@ import {
   type Credential,
 } from "../api";
 import "./console.css";
+import RegistrationGuide from "../components/RegistrationGuide";
 
 type List<T> = { items: T[]; total: number };
 type Operation = { operation_id: string; resource_id: string; state: string };
@@ -606,6 +607,7 @@ export default function Console() {
           )}
           <Modal
             title="注册新设备"
+            width={800}
             open={registerOpen}
             onCancel={() => {
               setRegisterOpen(false);
@@ -616,17 +618,13 @@ export default function Console() {
           >
             {registration ? (
               <Space orientation="vertical" style={{ width: "100%" }}>
-                <Typography.Paragraph>
-                  安装客户端并启动系统服务后，在设备上执行：
-                </Typography.Paragraph>
-                <Typography.Paragraph copyable={{ text: registration.command }}>
-                  <pre className="code-block">{registration.command}</pre>
-                </Typography.Paragraph>
                 <Typography.Text type="secondary">
-                  一次性凭据，有效期至{" "}
+                  一次性凭据，10 分钟内有效且只能使用一次，有效期至{" "}
                   {new Date(registration.expires_at).toLocaleString()}
-                  。注册成功后设备会自动出现。
+                  。请勿分享命令或截图；过期后关闭弹窗并重新生成。
                 </Typography.Text>
+                <RegistrationGuide command={registration.command} />
+                <Button onClick={() => action.current?.reload()}>刷新设备列表</Button>
               </Space>
             ) : (
               <Form
@@ -652,6 +650,7 @@ export default function Console() {
                 <Button type="primary" htmlType="submit" loading={busy}>
                   生成注册命令
                 </Button>
+                <RegistrationGuide />
               </Form>
             )}
           </Modal>

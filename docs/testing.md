@@ -7,7 +7,7 @@
 | Go 单元/模块 | 模型、vault、退避、授权、配置与恢复逻辑 | Go | 不代替网络或安装测试 |
 | PostgreSQL | 迁移、事务、并发、约束及真实控制仓储 | TEST_DATABASE_URL | 缺少变量会 SKIP |
 | 官方 GOST 集成 | TCP/UDP、固定目标、WSS、控制故障和撤销 | GOST_BINARY | 缺少变量会 SKIP |
-| 前端 | TypeScript、API 客户端测试、生产构建 | Node + npm ci | 构建不等于浏览器操作通过 |
+| 前端 | TypeScript、API 客户端与注册命令测试、生产构建 | Node + npm ci | 构建不等于浏览器操作通过 |
 | 浏览器 | 真实 Chrome 的管理操作与 Provider Bind | Web dist、Chrome、Node、官方 GOST | 显式启用才执行 |
 | 系统安装 | MSI/systemd、身份、重启、修复、升级与卸载 | 可丢弃 Windows/Linux 环境 | 仅构建/读取 MSI 表不算通过 |
 | 规模/长期 | Runtime 数量、并发业务与持续资源趋势 | 显式开关、时间和外部程序 | 短测不冒充 24 小时或生产容量 |
@@ -52,7 +52,9 @@ ALTASCI_BROWSER=1 go test ./internal/integration \
   -run TestDaemonWSSRegistrationDataAndControlOutage -v -count=1 -timeout 5m
 ```
 
-还需环境中的 GOST_BINARY、Node.js 和 Chrome；可通过 CHROME_BINARY 指定浏览器。该分支使用临时内存控制库与本机测试服务，完成登录、注册申请、隧道创建/编辑/启停/删除、真实 Provider Bind、Visitor 展示/YAML 下载/撤销、审计、Edge 和退出。
+还需环境中的 GOST_BINARY、Node.js 和 Chrome；可通过 CHROME_BINARY 指定浏览器。该分支使用临时内存控制库与本机测试服务，完成登录、注册申请、Windows MSI 注册指引与完整 PowerShell 命令复制、Linux 平台切换、隧道创建/编辑/启停/删除、真实 Provider Bind、Visitor 展示/YAML 下载/撤销、审计、Edge 和退出。
+
+`web/src/registration.test.ts` 检查 Windows 注册脚本保留实际服务器 origin/端口、单引号转义、服务启动与状态检查，以及拒绝异常命令格式。浏览器验证实际剪贴板内容与页面脚本一致（允许 Windows CRLF 换行）；这两项检查不代替 Windows Sandbox 内的 MSI 安装与服务生命周期验收。
 
 `scripts/browser-smoke.mjs` 也可针对独立测试控制端执行，需要 SMOKE_ORIGIN、SMOKE_USERNAME、SMOKE_PASSWORD；SMOKE_MUTATIONS=1 会变更资源，只能用于测试账号和测试环境。截图默认写入 `.local`，不作为源码必需材料。
 

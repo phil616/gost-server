@@ -89,8 +89,10 @@ try {
       expression,
       awaitPromise: true,
       returnByValue: true,
+      userGesture: true,
     });
-    if (r.exceptionDetails) throw Error(r.exceptionDetails.text);
+    if (r.exceptionDetails)
+      throw Error(r.exceptionDetails.exception?.description || r.exceptionDetails.text);
     return r.result.value;
   };
   const wait = async (expression) => {
@@ -99,9 +101,11 @@ try {
       await pause(250);
     }
     const shot = await send("Page.captureScreenshot", { format: "png" });
+    const failureScreenshot = process.env.SMOKE_FAILURE_SCREENSHOT ||
+      ".local/browser-smoke-failure.png";
+    await fs.mkdir(path.dirname(path.resolve(failureScreenshot)), { recursive: true });
     await fs.writeFile(
-      process.env.SMOKE_FAILURE_SCREENSHOT ||
-        ".local/browser-smoke-failure.png",
+      failureScreenshot,
       Buffer.from(shot.data, "base64"),
     );
     const controls = await evaluate(
@@ -156,11 +160,38 @@ try {
   await wait('document.body.innerText.includes("注册设备")');
   await clickText("注册设备");
   await wait('!!document.getElementById("name")');
+  await wait('document.body.innerText.includes("Windows · 已安装 MSI")');
+  await wait('document.body.innerText.includes("Get-Service -Name AltasCITunnel")');
   await fill("name", `browser-smoke-${Date.now()}`);
   await clickText("生成注册命令");
   await wait(
-    'document.body.innerText.includes("altascitunnel register --server")',
+    'document.body.innerText.includes("& $agent register --server")',
   );
+  const registrationScript = await evaluate(
+    'document.querySelector(".ant-modal .code-block").textContent',
+  );
+  if (
+    !registrationScript.includes("Join-Path $env:ProgramFiles 'AltasCITunnel\\altascitunnel.exe'") ||
+    !/& \$agent register --server 'wss:\/\/[^']+' --token '[^']+'/.test(registrationScript) ||
+    !registrationScript.includes("& $agent status") ||
+    !await evaluate('document.body.innerText.includes("client_id 非空") && document.body.innerText.includes("Enrollment accepted")')
+  ) throw Error("Windows MSI registration guide is incomplete");
+  await send("Browser.grantPermissions", {
+    origin,
+    permissions: ["clipboardReadWrite", "clipboardSanitizedWrite"],
+  });
+  await send("Emulation.setFocusEmulationEnabled", { enabled: true });
+  await send("Page.bringToFront");
+  await evaluate(`window.__registrationCopy = ${JSON.stringify(registrationScript)}`);
+  await evaluate('document.querySelector(".ant-modal .ant-typography-copy").click()');
+  // Windows clipboard text may use CRLF even though the rendered script uses LF.
+  await wait('navigator.clipboard.readText().then(text => text.replace(/\\r\\n/g, "\\n") === window.__registrationCopy)');
+  await evaluate('delete window.__registrationCopy');
+  await evaluate('[...document.querySelectorAll(".ant-modal [role=tab]")].find(t=>t.textContent.includes("Linux")).click()');
+  await wait('document.body.innerText.includes("sudo altascitunnel register --server")');
+  await evaluate('[...document.querySelectorAll(".ant-modal [role=tab]")].find(t=>t.textContent.includes("Windows")).click()');
+  await wait('document.body.innerText.includes("& $agent register --server")');
+  console.log("PASS: Windows MSI guide, complete PowerShell clipboard contents, registration status criteria and Linux tab");
   await evaluate('document.querySelector(".ant-modal-close").click()');
   await clickText("隧道管理");
   await wait('document.body.innerText.includes("新增隧道")');
