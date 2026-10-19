@@ -19,3 +19,6 @@ __pycache__/
 *.pfx
 *.msi
 coverage.out
+
+dev/*
+altasci-tunnel-docker-test.tar.gz
