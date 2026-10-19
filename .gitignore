@@ -9,6 +9,7 @@
 /.env.*
 !/.env.example
 /.test-data/
+/compose.env
 /test-data/
 __pycache__/
 *.pyc

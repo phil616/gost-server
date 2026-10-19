@@ -2,6 +2,8 @@
 
 目标是在自己的 Linux 服务器上进行最小联调。使用已有 PostgreSQL、证书和 HTTPS/WSS 反代；只启动 Control 和 Edge，不要求安装数据库、容器或更换反代。
 
+希望用一个容器运行两个服务端进程时，使用 [Docker 启动指南](docker.md)，同样复用已有数据库与反代。
+
 ## 1. 准备发布包
 
 解压对应版本发布包并进入其根目录。`bin/linux-amd64` 对应 x86_64，`bin/linux-arm64` 对应 aarch64。前端产物位于 `web/dist`。源码树通过不同方式构建时，二进制路径见 [开发指南](development.md)。
@@ -67,7 +69,7 @@ bin/linux-amd64/altasci-control serve \
 
 保留完整外部 Host（包括非默认端口），使用与入口名称匹配且设备信任的证书，空闲超时应覆盖 15 秒心跳并留余量。不要把 `/ws` 的尾斜杠或管理 WS 前缀改写掉。
 
-内部程序只允许 loopback；如果反代处于另一容器或主机，需通过已有本机转发层接入。直接传 `--listen 0.0.0.0:...` 会被拒绝。详细契约见 [配置参考](configuration.md#反代与网络契约)。
+内部管理接口只允许 loopback 或 Unix socket，业务监听默认只允许 loopback；未显式启用 `--allow-non-loopback` 时，直接传 `--listen 0.0.0.0:...` 会被拒绝。跨容器接入可使用 [Docker 指南](docker.md) 中的显式容器监听配置；本文二进制最小启动继续使用回环地址。详细契约见 [配置参考](configuration.md#反代与网络契约)。
 
 ## 5. 检查启动
 

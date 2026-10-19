@@ -19,10 +19,11 @@ func main() {
 }
 func run() error {
 	data := flag.String("listen", "127.0.0.1:18080", "GOST WebSocket listener")
+	allowNonLoopback := flag.Bool("allow-non-loopback", false, "allow the data listener on a container/private network; internal admin stays protected")
 	admin := flag.String("admin", "unix:///run/altasci/edge.sock", "protected internal listener (loopback TCP allowed for testing)")
 	policy := flag.String("policy", "/var/lib/altasci-edge/policy.json", "durable policy snapshot")
 	flag.Parse()
-	if e := host.Loopback(*data); e != nil {
+	if e := host.BusinessListener(*data, *allowNonLoopback); e != nil {
 		return e
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

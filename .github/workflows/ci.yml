@@ -57,6 +57,25 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
+  docker:
+    name: Single-container server integration
+    needs: [web, go]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: metadata
+        run: node scripts/release-metadata.cjs
+      - run: docker compose --env-file compose.env.example config --quiet
+      - name: Build server image including licenses and sources
+        env:
+          VERSION: ${{ steps.metadata.outputs.version }}
+        run: docker build --build-arg VERSION="$VERSION" --build-arg VCS_REF="$GITHUB_SHA" -t altasci-server:ci .
+      - name: Test server against isolated external PostgreSQL
+        run: sudo python3 scripts/test-docker.py --image altasci-server:ci
+
   go:
     name: Linux integration, race and generated code
     needs: web

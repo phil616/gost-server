@@ -11,6 +11,7 @@
 | 任务 | 文档 |
 | --- | --- |
 | 接入现有数据库和反代，最小启动 | [快速开始](docs/getting-started.md) |
+| 一个 Docker 镜像运行 Control、Edge 和 Web | [Docker 启动指南](docs/docker.md) |
 | 注册设备、管理隧道、实际访问 | [使用指南](docs/usage.md) |
 | 查命令、参数、环境和反代要求 | [配置参考](docs/configuration.md) |
 | 理解系统和代码 | [系统架构](docs/architecture.md)、[技术实现](docs/implementation.md) |
@@ -27,6 +28,7 @@
 | --- | --- |
 | `altasci-control` | Web、REST API、设备管理 WSS、PostgreSQL、策略协调和审计 |
 | `altasci-edge` | GOST 数据入口、Provider/Visitor 授权、连接和策略快照 |
+| `altasci-server` | Docker 入口，在同一容器管理 Control/Edge，提供初始化与健康检查 |
 | `altascitunnel` | 设备身份、管理连接、配置应用、内嵌 GOST 和本地 IPC |
 
 Control 与 Edge 同机分进程；客户端为单实例程序。目标是客户端需要连接的服务地址。管理在线、配置已应用、反向连接成功与目标服务健康分别判断。

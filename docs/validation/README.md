@@ -6,6 +6,7 @@
 | --- | --- | --- |
 | [0.1.1](0.1.1/README.md) | 2026-10-18 | Windows/真实 PostgreSQL/浏览器、WSL race、Linux 22 项、Sandbox 23 项、模拟规模 |
 | [开源发布流程](open-source-release.md) | 2026-10-19 | MIT/依赖核查、构建与归档内容校验、工作流静态检查；未远端发布 |
+| [Docker 服务端](docker-server.md) | 2026-10-19 | WSL 真实 Docker/Compose、外置 PostgreSQL、单容器进程管理、持久化、许可与故障恢复 |
 
 当前测试入口见 [测试指南](../testing.md)，安装生命周期见 [系统验收](../system-acceptance.md)。新版本另建目录，报告应注明对应提交与产物；版本标签、前端显示版本和管理协议版本分别记录。
 

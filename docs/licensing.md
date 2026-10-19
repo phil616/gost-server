@@ -44,6 +44,7 @@ MPL 是文件范围的 copyleft：受其覆盖的源码及修改仍按 MPL 提�
 - 完整分发 ZIP：上述使用材料、生产 Web、三个平台程序和 MSI、聚合第三方许可、结构化清单、MPL 源码 ZIP、本项目完整源码 ZIP、提交与版本元数据、逐文件校验值。
 - 独立源码 ZIP：项目可修改源文件、完整 vendored GOST、锁文件与工作流；不含运行秘密、依赖安装目录或构建工具二进制。Go/npm 外部依赖由锁定版本获取。
 - MSI：客户端程序、根 MIT LICENSE、第三方声明和 `licenses.zip`；该压缩包内有许可清单、正文及对应 MPL 源码。即使 MSI 被单独转发，接收者仍有这些材料。
+- Docker 服务端镜像：`/usr/share/altasci/` 内含项目 LICENSE、第三方声明、聚合许可/清单及 MPL 模块源码，`sources/project-source.tar.gz` 提供项目构建源码；基础镜像自带的系统许可一并保留。Go/npm 清单不宣称覆盖 Distroless 系统材料，详见 [Docker 指南](docker.md)。
 
 `licenses/dependency-inventory.json` schemaVersion=2 记录组件版本、许可、来源、npm integrity 及 MPL 模块 checksum / 源码 SHA-256；不是 SPDX/CycloneDX 格式 SBOM。`THIRD_PARTY_LICENSES.txt` 包含原始许可/NOTICE。保留上游版权，不把聚合清单理解为“所有第三方代码重新以 MIT 许可”。
 

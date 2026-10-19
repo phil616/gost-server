@@ -4,8 +4,9 @@
 
 | 路径 | 责任 | 关键约束 |
 | --- | --- | --- |
-| `cmd/altasci-control` | CLI、迁移、密钥、管理员、恢复命令和 HTTP 启动 | 只绑定 loopback |
+| `cmd/altasci-control` | CLI、迁移、密钥、管理员、恢复命令和 HTTP 启动 | 默认 loopback；容器业务入口显式放宽 |
 | `cmd/altasci-edge` | 数据监听、内部管理入口和引擎启动 | 数据入口与内部管理入口分开 |
+| `cmd/altasci-server` | 容器入口、双进程管理、初始化与健康检查 | 不代理业务，不包含数据库或客户端；子进程退出时停止整个容器 |
 | `cmd/altascitunnel` | run/register/status、系统服务、内部安装动作 | CLI 管理通过 IPC，不创建第二个运行实例 |
 | `internal/control` | REST、管理员认证、设备协议、配置/策略生成和 reconcile | 持久化先于返回 accepted |
 | `internal/edge` | 授权、策略缓存、连接跟踪、快照和指标 | 只有当前有效策略允许数据请求 |

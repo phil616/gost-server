@@ -7,6 +7,7 @@
 | 目标 | 推荐顺序 |
 | --- | --- |
 | 自有服务器临时测试 | [快速开始](getting-started.md) → [使用指南](usage.md) → [故障排查](troubleshooting.md) |
+| 单容器运行服务端，复用既有 PostgreSQL 和反代 | [Docker 启动指南](docker.md) |
 | 接入现有数据库、证书和反代 | [配置参考](configuration.md) → [安全设计](security.md) |
 | 理解或修改系统 | [项目概览](overview.md) → [系统架构](architecture.md) → [技术实现](implementation.md) → [数据模型](data-model.md) |
 | 调用 API 或开发管理客户端 | [接口说明](api.md) → [OpenAPI](openapi.yaml) → [管理协议](agent-protocol.md) |
@@ -23,6 +24,7 @@
 | [安全设计](security.md) | 身份、秘密、授权、TLS、IPC 和已知限制 |
 | [架构决策](decisions.md) | 已采用的取舍、原因及重新评估条件 |
 | [快速开始](getting-started.md) | 使用既有基础设施的最小启动与首轮验证 |
+| [Docker 启动指南](docker.md) | 单镜像 Control/Edge/Web、Compose、外置数据库、初始化、持久化和网络 |
 | [使用指南](usage.md) | 注册、TCP/UDP 访问、编辑、撤销和安装 |
 | [配置参考](configuration.md) | CLI、默认值、环境、文件、反代和健康接口 |
 | [接口说明](api.md) | REST 调用、CSRF、幂等、并发控制与错误 |

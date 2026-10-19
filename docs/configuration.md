@@ -6,6 +6,8 @@ CLI 参数以 `cmd/*/main.go` 为准。`DATABASE_URL` 是 Control 直接读取�
 
 程序没有 dotenv 自动加载。根目录 `.env` 只是用户自己的配置文件，必须由 shell 或进程管理器明确导出需要的值。显式 `--database-url` 会覆盖环境值；不建议把数据库密码放进进程参数。
 
+Docker 的 `altasci-server` 入口额外读取 `ALTASCI_PUBLIC_URL`、`ALTASCI_DATA_DIR`、`ALTASCI_CONTROL_LISTEN`、`ALTASCI_EDGE_LISTEN` 并转换为两个服务进程的参数；Compose 用显式 `--env-file compose.env` 注入，见 [Docker 启动指南](docker.md)。
+
 ## altasci-control
 
 命令为 `serve`（默认）、`keygen`、`migrate`、`admin-create`、`recover-revisions`。参数应放在命令之后。
@@ -14,7 +16,8 @@ CLI 参数以 `cmd/*/main.go` 为准。`DATABASE_URL` 是 Control 直接读取�
 | --- | --- | --- |
 | `--database-url` | 环境 `DATABASE_URL` | 除 keygen 外需要 PostgreSQL 连接串 |
 | `--key` | `/etc/altasci/secrets.key` | 32 字节 AES 主密钥 |
-| `--listen` | `127.0.0.1:18081` | 内部 HTTP/管理 WS，仅字面量 loopback |
+| `--listen` | `127.0.0.1:18081` | HTTP/管理 WS，默认仅字面量 loopback |
+| `--allow-non-loopback` | false | 显式允许业务入口监听容器/私网字面量 IP；TLS 仍由反代处理 |
 | `--edge` | `unix:///run/altasci/edge.sock` | Edge 内部接口；TCP 形式为 `http://127.0.0.1:18082` |
 | `--public-url` | `https://tunnel.example.com` | 外部 HTTPS origin，用于注册及 Visitor 导出 |
 | `--web` | `web/dist` | 前端静态资源目录，建议绝对路径 |
@@ -30,6 +33,7 @@ keygen 只生成新密钥，拒绝覆盖。migrate 运行嵌入程序的 goose S
 | 参数 | 默认值 | 用途 |
 | --- | --- | --- |
 | `--listen` | `127.0.0.1:18080` | GOST WS 数据入口，仅字面量 loopback |
+| `--allow-non-loopback` | false | 显式允许数据入口监听容器/私网字面量 IP；不影响 `--admin` |
 | `--admin` | `unix:///run/altasci/edge.sock` | 内部管理 listener，也可为 `127.0.0.1:18082` |
 | `--policy` | `/var/lib/altasci-edge/policy.json` | 持久策略快照 |
 
@@ -75,7 +79,7 @@ CA 参数需要给运行实例，而不是只给 register 命令；后者只是 
 2. 保留外部完整 Host，包括非默认端口；管理写操作校验 Origin host:port。不要通过随意删除 Origin 头绕过这个检查。
 3. 两条 WS 路径支持 Upgrade、双向流式转发和长连接；避免缓存/缓冲。心跳为 15 秒，超时需留出网络余量。
 4. 证书名称与 origin 一致；设备/Visitor 信任签发 CA。证书在反代侧管理，应用内部 HTTP listener 不接受 TLS 证书参数。
-5. 后端只能绑定字面量 loopback；`localhost:18081` 和 `0.0.0.0:18081` 不符合现有校验。跨容器反代需本机转发或适配网络命名空间。
+ 5. 业务后端默认只能绑定字面量 loopback。容器内通过显式 `--allow-non-loopback` 允许 `0.0.0.0:18081` 等字面量 IP，借助 Docker 私网或回环端口发布接入；`localhost:18081` 仍不接受。Edge 内部管理监听不放宽。
 6. `/internal/v1/*` 属于 Edge 管理入口，不能加入外部数据入口路由。
 
 `deploy/openresty.conf` 仅为可选示例。非默认外部端口使用该示例时，应让 Host 转发保留端口，例如改成完整外部请求 Host，而不是丢弃端口的主机名。

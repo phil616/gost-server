@@ -18,6 +18,8 @@ flowchart LR
 
 Control 与 Edge 是同一 Linux 主机上的两个进程，数据库可以使用既有远端服务。反代产品自行选择，满足 [网络契约](configuration.md#反代与网络契约) 即可。客户端把管理模块与 GOST Runtime 放在一个进程中；Visitor 使用官方 gost，不申请设备身份。
 
+[单容器模式](docker.md) 将 Control、Edge、Web 和进程管理入口打入同一镜像，仍保持两个服务进程。它通过 Docker 私有网络接受现有反代的业务请求，内部协调保留 Unix socket；入口在任一子进程退出时停止整个容器，因此故障恢复粒度是整个服务端。
+
 跨网握手由设备或 Visitor 主动发起，随后业务双向传输。服务端不主动拨号设备的公网入站端口。
 
 ## 平面划分
@@ -29,7 +31,7 @@ Control 与 Edge 是同一 Linux 主机上的两个进程，数据库可以使�
 | 数据 | WSS `/ws` | GOST Provider Bind、Visitor Connect 和业务流量 |
 | 内部协调 | Unix socket 或本机 TCP | 策略应用、快照、指标和健康 |
 
-内部监听只允许字面量 loopback 或 Unix socket。应用不提供直接的对外 TLS listener；TLS 由反代终止。本机 TCP 管理接口依赖本机进程信任，Unix socket 可进一步限制操作系统用户/组。
+内部管理监听只允许字面量 loopback 或 Unix socket。业务监听默认仅允许字面量 loopback；容器模式显式启用 `--allow-non-loopback`，只放宽业务入口，不放宽 Edge 管理接口。应用不提供直接的对外 TLS listener；TLS 由反代终止。本机 TCP 管理接口依赖本机进程信任，Unix socket 可进一步限制操作系统用户/组。
 
 ## 注册时序
 

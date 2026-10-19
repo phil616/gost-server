@@ -22,6 +22,29 @@ func Loopback(addr string) error {
 	}
 	return nil
 }
+
+// BusinessListener explicitly opts into container network interfaces. Internal
+// coordination listeners continue to use Listen and its loopback restriction.
+func BusinessListener(addr string, allowNonLoopback bool) error {
+	if !allowNonLoopback {
+		return Loopback(addr)
+	}
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return err
+	}
+	if net.ParseIP(host) == nil {
+		return errors.New("business listener must bind a literal IP address")
+	}
+	return nil
+}
+
+func ListenBusiness(addr string, allowNonLoopback bool) (net.Listener, error) {
+	if err := BusinessListener(addr, allowNonLoopback); err != nil {
+		return nil, err
+	}
+	return net.Listen("tcp", addr)
+}
 func Listen(endpoint string) (net.Listener, error) {
 	if strings.HasPrefix(endpoint, "unix://") {
 		path := strings.TrimPrefix(endpoint, "unix://")

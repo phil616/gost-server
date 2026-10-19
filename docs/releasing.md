@@ -9,7 +9,7 @@
 | 手动 Run workflow | CI | 对选定分支重复验证并生成临时产物 |
 | 推送 v 开头标签 | Release → 复用 CI → publish | 严格检查版本、完整构建验证、创建草稿、上传全部文件、最后公开 |
 
-当前工作流：[CI](../.github/workflows/ci.yml)、[Release](../.github/workflows/release.yml)。Actions 固定到核对过的 commit SHA，由 [Dependabot](../.github/dependabot.yml) 每月提出依赖更新；更新仍须走 CI 与许可审查。
+当前工作流：[CI](../.github/workflows/ci.yml)、[Release](../.github/workflows/release.yml)。Actions 固定到核对过的 commit SHA；依赖更新仍须走 CI 与许可审查。
 
 普通 CI 的包版本为 `0.0.0-ci.RUN_NUMBER.RUN_ATTEMPT`，MSI 内部数字版本为 `0.0.0`。这些是短期测试包，不能代替正式版本或证明部署验收通过。`frontend-internal` 是 CI 任务间传递生产 Web/许可的中间产物，保留 3 天；对外分发下载 `release-packages`，保留 14 天。组织或仓库策略可能进一步缩短保留期。
 

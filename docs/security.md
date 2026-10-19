@@ -59,6 +59,8 @@ Windows 安装使用 LocalService、专属服务 SID、受限命名管道、数�
 
 管理和数据 WSS 验证证书与 origin 主机名；测试私有 CA 使用 `--ca-file` 或 GOST CA 参数，不使用关闭证书校验作为正常流程。TLS 在现有反代终止，代理到 loopback 的链路由主机隔离保护。
 
+Docker 模式显式允许业务入口监听容器网卡，内部管理仍固定为 Unix socket；默认 Compose 仅向宿主机回环地址发布端口。容器以 UID 65532 运行、移除 capabilities、禁止提权并使用只读根文件系统，持久秘密放在私有卷中。Docker 私网内可访问业务端口的其他容器应纳入网络信任边界；跨主机反代链路需由使用者按既有体系保护，见 [Docker 指南](docker.md)。
+
 撤销依赖策略传达到 Edge；Control/数据库停机时无法承诺新撤销实时生效。Edge 可独立处理已经知道的到期时间。单 Edge 没有可用性冗余；UDP 经 TCP/WebSocket 不具备原生 UDP 的丢包和拥塞特征。
 
 当前 Windows 发布产物未完成组织代码签名。Sandbox 测试中临时关闭客体 Smart App Control 是验收环境处理，不是宿主机或真实部署的签名策略建议。

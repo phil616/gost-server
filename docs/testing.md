@@ -69,9 +69,25 @@ ALTASCI_STRESS=1 ALTASCI_SOAK_SECONDS=86400 go test ./internal/integration -run 
 
 Go heap 不包含其他进程和操作系统 RSS。长期记录应包含机器条件、代理/TLS、载荷、内存/句柄/连接趋势与故障注入时间；不能将可配置 86400 参数写成已经完成 24 小时验证。
 
+## Docker 服务端验收
+
+在 Linux 本机 Docker Engine 上构建 [服务端镜像](docker.md) 后执行：
+
+```sh
+docker compose --env-file compose.env.example config --quiet
+docker build -t altasci-server:dev .
+sudo python3 scripts/test-docker.py --image altasci-server:dev
+```
+
+脚本只使用随机命名的 Docker 网络、数据卷和独立 PostgreSQL 测试容器，不读取项目 `.env`/`compose.env`，不连接用户数据库，结束后清理本次资源。PostgreSQL 测试容器是外部依赖夹具，不加入正式 Compose 或服务端镜像。
+
+验证非 root 初始化、迁移、管理员登录、Web/API、Secure Cookie/CSRF、Unix socket 策略同步、健康检查、许可/MPL 源码、无客户端/构建缓存、正常停止和重建后保留密钥/快照，以及杀死 Edge 后整个容器失败退出。还会实际运行仓库 Compose，检查带 `$` 密码的环境文件、回环端口发布、只读根文件系统和故障后自动重启。故障测试需要 root，在本机 `/proc` 中核对容器 ID 和 Edge 可执行路径后才发送信号；不支持远端 Docker daemon。
+
+`cmd/altasci-server/main_test.go` 额外验证双进程信号转发、启动失败回收、异常退出和强制停止超时；POSIX 生命周期用例在 Windows 上明确 SKIP。`internal/host/host_test.go` 验证容器业务监听的显式例外不影响内部管理接口的回环限制。镜像测试不替代外部 TLS 反代和真实 TCP/UDP 端到端验收。
+
 ## CI 与系统验收
 
-`.github/workflows/ci.yml` 定义文档/前端/许可检查、Linux PostgreSQL/官方 GOST/浏览器/race/sqlc，以及 Windows 测试、MSI 内容校验与完整分发 ZIP 打包。标签触发 release.yml 复用同一 CI 后发布，详见 [发布指南](releasing.md)。仓库存在 workflow 不证明已在远端执行成功；MSI 内容校验也不等于实际安装通过。
+`.github/workflows/ci.yml` 定义文档/前端/许可检查、Linux PostgreSQL/官方 GOST/浏览器/race/sqlc、Docker 构建与隔离容器验收，以及 Windows 测试、MSI 内容校验与完整分发 ZIP 打包。标签触发 release.yml 复用同一 CI 后发布，详见 [发布指南](releasing.md)。仓库存在 workflow 不证明已在远端执行成功；MSI 内容校验也不等于实际安装通过。Docker job 只构建与测试，不推送镜像仓库。
 
 真实平台安装使用 [系统验收手册](system-acceptance.md) 中的受控环境。当前安装测试脚本和 `internal/integration/systemfixture` 仍服务于有效验收，不能作为“旧测试”删除。早期仅探索原生 GOST 通用认证的调研探针已经由这些测试取代。
 

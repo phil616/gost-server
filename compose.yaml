@@ -1,0 +1,29 @@
+name: altasci
+
+services:
+  server:
+    image: altasci-server:${ALTASCI_VERSION:-dev}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${ALTASCI_VERSION:-dev}
+        VCS_REF: ${ALTASCI_VCS_REF:-unknown}
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in compose.env}
+      ALTASCI_PUBLIC_URL: ${ALTASCI_PUBLIC_URL:?Set ALTASCI_PUBLIC_URL in compose.env}
+    ports:
+      - "${ALTASCI_BIND_IP:-127.0.0.1}:${ALTASCI_EDGE_PORT:-18080}:18080"
+      - "${ALTASCI_BIND_IP:-127.0.0.1}:${ALTASCI_CONTROL_PORT:-18081}:18081"
+    volumes:
+      - server-data:/data
+    tmpfs:
+      - /run/altasci:uid=65532,gid=65532,mode=0700
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+volumes:
+  server-data:

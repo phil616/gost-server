@@ -32,7 +32,7 @@ foreach ($arch in @('linux-amd64','linux-arm64')) {
     foreach ($app in @('altasci-control','altasci-edge','altascitunnel')) {Copy-Item -LiteralPath "bin/$arch/$app" -Destination "$releaseRoot/bin/$arch"}
 }
 Copy-Item -LiteralPath $frontendRoot -Destination "$releaseRoot/web/dist" -Recurse
-foreach ($item in @('deploy','scripts','docs','patches','README.md','LICENSE','THIRD_PARTY_NOTICES.md','CONTRIBUTING.md','SECURITY.md')) {
+foreach ($item in @('deploy','scripts','docs','patches','README.md','LICENSE','THIRD_PARTY_NOTICES.md','CONTRIBUTING.md','SECURITY.md','Dockerfile','.dockerignore','compose.yaml','compose.env.example')) {
     Copy-Item -LiteralPath $item -Destination $releaseRoot -Recurse
 }
 Copy-Item -LiteralPath (Join-Path $frontendRoot 'licenses') -Destination "$releaseRoot/licenses" -Recurse

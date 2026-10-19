@@ -34,7 +34,8 @@ func run() error {
 	fs := flag.NewFlagSet(command, flag.ContinueOnError)
 	dsn := fs.String("database-url", os.Getenv("DATABASE_URL"), "PostgreSQL URL (or DATABASE_URL)")
 	key := fs.String("key", "/etc/altasci/secrets.key", "AES-256 key file")
-	listen := fs.String("listen", "127.0.0.1:18081", "HTTP listener behind OpenResty")
+	listen := fs.String("listen", "127.0.0.1:18081", "HTTP listener behind your reverse proxy")
+	allowNonLoopback := fs.Bool("allow-non-loopback", false, "allow the business listener on a container/private network; does not enable TLS")
 	endpoint := fs.String("edge", "unix:///run/altasci/edge.sock", "Edge internal endpoint")
 	public := fs.String("public-url", "https://tunnel.example.com", "public HTTPS origin")
 	web := fs.String("web", "web/dist", "compiled React assets")
@@ -82,14 +83,14 @@ func run() error {
 	if command != "serve" {
 		return fmt.Errorf("unknown command %q", command)
 	}
-	if e = host.Loopback(*listen); e != nil {
+	if e = host.BusinessListener(*listen, *allowNonLoopback); e != nil {
 		return e
 	}
 	server.WebDir = *web
 	server.CookieSecure = !*dev
 	server.Start(ctx)
 	defer server.Close()
-	ln, e := host.Listen(*listen)
+	ln, e := host.ListenBusiness(*listen, *allowNonLoopback)
 	if e != nil {
 		return e
 	}
