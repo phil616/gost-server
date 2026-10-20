@@ -22,3 +22,6 @@ coverage.out
 
 dev/*
 altasci-tunnel-docker-test.tar.gz
+
+# security audit reports (local only)
+/security-audit/

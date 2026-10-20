@@ -1,0 +1,81 @@
+main:
+  push:
+    - name: build-and-deploy-altasci
+      services:
+        - docker
+      lock:
+        key: deploy-altasci-tunnel-s2
+        wait: true
+        expires: 7200
+        timeout: 7200
+      stages:
+        - name: docker login
+          script: |
+            set -eu
+            set +x
+            printf '%s' "$CNB_TOKEN" |
+              docker login --username "$CNB_TOKEN_USER_NAME" --password-stdin "$CNB_DOCKER_REGISTRY"
+
+        - name: docker build
+          timeout: 45m
+          script: |
+            set -eu
+            docker build \
+              --file Dockerfile \
+              --build-arg VERSION="${CNB_COMMIT}" \
+              --build-arg VCS_REF="${CNB_COMMIT}" \
+              --tag "${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:prod" \
+              --tag "${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_COMMIT}" \
+              .
+            # Mirror the initialization client into the same authenticated registry.
+            # The deployment host does not need access to Docker Hub.
+            docker pull postgres:18
+            docker tag postgres:18 "${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_COMMIT}-init-client"
+
+        - name: docker push
+          timeout: 15m
+          script: |
+            set -eu
+            docker push "${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_COMMIT}-init-client"
+            docker push "${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_COMMIT}"
+            docker push "${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:prod"
+
+        - name: 通过 ssh 部署后端
+          image: tencentcom/ssh
+          timeout: 20m
+          imports:
+            - https://cnb.cool/greenshadecapital/dreamreflex/devops-server-secrets/-/blob/main/s2-server.yml
+          settings:
+            host:
+              - ${S2_IP}
+            username: ${S2_SSH_USER}
+            key: ${S2_SSH_PVKEY}
+            port: ${S2_SSH_PORT}
+            command_timeout: 15m
+            script: |
+              set -eu
+              set +x
+              # Preserve the original deployment credentials. Feed the token as
+              # literal stdin data so shell metacharacters are not evaluated.
+              docker login --username '${CNB_TOKEN_USER_NAME}' --password-stdin '${CNB_DOCKER_REGISTRY}' <<'ALTASCI_REGISTRY_TOKEN_STDIN_7CB842E5'
+              ${DEVOPS_TASKMGR_CNB_DEPLOY_TOKEN}
+              ALTASCI_REGISTRY_TOKEN_STDIN_7CB842E5
+              image='${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_COMMIT}'
+              docker pull "\$image"
+              workdir=\$(mktemp -d)
+              source_container=''
+              cleanup() {
+                if [ -n "\$source_container" ]; then
+                  docker rm --volumes "\$source_container" >/dev/null
+                fi
+                rm -rf -- "\$workdir"
+              }
+              trap cleanup EXIT
+              source_container=\$(docker create "\$image")
+              docker cp "\$source_container:/usr/share/altasci/deploy/." "\$workdir/"
+              docker rm --volumes "\$source_container" >/dev/null
+              source_container=''
+              baoctl sync altasci-tunnel
+              bash "\$workdir/deploy-docker.sh" "\$image" \
+                /run/baoctl/altasci-tunnel.env altasci-server-data bridge \
+                '${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_COMMIT}-init-client'

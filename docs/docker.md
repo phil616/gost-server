@@ -159,6 +159,67 @@ docker compose --env-file compose.env run --rm --no-deps server \
 
 `recover-revisions` 的完整条件见 [恢复旧数据库](operations.md#恢复旧数据库)。不要把恢复命令当作正常启动步骤。不要同时启动多个容器对同一数据卷/数据库运行本项目服务端；当前是单 Control、单 Edge 架构。
 
+## CNB 自动初始化与部署
+
+仓库根目录 `.cnb.yml` 在 `main.push` 构建并推送镜像，通过 SSH 部署指定 commit 的镜像。
+部署脚本随镜像存放在 `/usr/share/altasci/deploy/`，SSH 阶段用 `docker create/cp` 提取后执行，
+不需要服务器克隆仓库，也不需要在 Distroless 容器内运行 Bash。
+
+- `scripts/init-docker.sh`：首次初始化、创建管理员、写成功标记；失败可重试。
+- `scripts/deploy-docker.sh`：部署锁、停止旧服务、调用初始化、执行版本迁移、启动并等待健康检查。
+
+服务器需要 Bash、Docker、`flock` 和已配置的 `baoctl`；SSH 用户需要 Docker 权限并可写 `/run/lock`。
+SSH 配置沿用 `s2-server.yml` 的 `S2_IP`、`S2_SSH_USER`、`S2_SSH_PVKEY`、`S2_SSH_PORT`。
+SSH 阶段沿用原有 `CNB_TOKEN_USER_NAME` 和 `DEVOPS_TASKMGR_CNB_DEPLOY_TOKEN`，
+在拉取镜像前自动执行 `docker login --password-stdin`，无需服务器预先手动登录。
+令牌通过带引号的 here-document 作为标准输入传递，其中的 Shell 特殊字符不会执行。
+
+`baoctl sync altasci-tunnel` 必须生成 `/run/baoctl/altasci-tunnel.env`，至少包含：
+
+```dotenv
+DATABASE_URL=postgres://USER:PASSWORD@DB_HOST:5432/APP_DB?sslmode=verify-full
+ALTASCI_PUBLIC_URL=https://tunnel.example.com
+ALTASCI_INIT_ADMIN_USERNAME=admin
+ALTASCI_INIT_ADMIN_PASSWORD=REPLACE_WITH_A_STRONG_PASSWORD
+```
+
+这是 **Docker env-file 格式，值不加 Shell/Compose 引号**；密码中的 `$`、引号和反引号会作为字面值传递。
+初始化密码至少 12 个字符且不能含换行。已有管理员时保留账号与密码，不根据环境变量重置。
+首次成功后可以从 Bao 配置中移除两个 `ALTASCI_INIT_ADMIN_*` 变量。
+不要把真实环境文件提交到仓库。
+
+沿用命名卷 `altasci-server-data`，统一挂载到 `/data`。成功后卷中生成 `/data/.initialized`，内容为 `1`；
+检查密钥和数据库管理员状态后，后续部署跳过首次初始化，但仍执行新版本的数据库迁移。
+标记写入中断后会检查已有管理员并补写，不重复创建账号。
+数据库已有项目表但原密钥缺失时拒绝初始化；标记与数据库状态不一致时失败退出。
+卷与数据库必须始终配套，标记不能证明任意数据库都与当前密钥匹配。
+
+脚本临时运行 PostgreSQL 客户端镜像中的 `psql` 和 Shell 来检查数据库、管理卷内文件，**不会启动 PostgreSQL 服务**。
+CNB 构建节点将 `postgres:18` 同步为同一项目仓库的 `${CNB_COMMIT}-init-client` 标签，
+SSH 部署显式使用这个标签；服务器仅需访问原有 CNB 镜像仓库，无需新增 Docker Hub 连通要求。
+宿主机无需安装 `psql`。本地已有客户端镜像时直接复用，不存在时才拉取。
+客户端与应用容器使用同一 Docker 网络，数据库地址必须对该网络可达。
+默认是 `bridge`，因此不要把宿主机回环地址当作数据库地址。
+手工执行脚本时，客户端镜像默认值仍是 `postgres:18`；受限网络应传入上述 CNB 镜像地址或预载镜像。
+需要使用已有 Docker 网络或其他客户端镜像时，在 SSH 调用中显式传入：
+
+```bash
+bash deploy-docker.sh IMAGE /run/baoctl/altasci-tunnel.env altasci-server-data YOUR_NETWORK postgres:18
+```
+
+服务端口映射为 `127.0.0.1:18080:18080`、`127.0.0.1:18081:18081`。
+保留默认容器监听端口，不要在环境文件中将其改为回环监听。
+部署前完成应用镜像拉取、客户端镜像拉取和数据库连接检查，再停止旧服务。
+初始化或迁移失败时保留已停止的旧容器以便检查；不自动回滚数据库或重启旧版本。
+启动后最多等待 180 秒通过 Docker 健康检查，失败则整个部署失败。
+流水线不自动删除旧镜像或持久化数据。
+
+初始化回归检查使用独立网络、数据库与数据卷，不读取 Bao 或生产配置：
+
+```bash
+python3 scripts/test-docker-init.py --image altasci-server:dev
+```
+
 ## 非默认网络和私有数据库 CA
 
 如果使用 Linux host 网络，可以直接复用宿主机回环监听的 PostgreSQL。此模式不使用 `-p` 映射，必须同时把两个业务 listener 改为回环地址，避免监听整个宿主机网卡：

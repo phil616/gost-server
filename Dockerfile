@@ -49,6 +49,7 @@ LABEL org.opencontainers.image.title="AltasCI Tunnel Server" \
       org.opencontainers.image.version=$VERSION \
       org.opencontainers.image.revision=$VCS_REF
 COPY --from=server-build /out/altasci-control /out/altasci-edge /out/altasci-server /usr/local/bin/
+COPY scripts/init-docker.sh scripts/deploy-docker.sh /usr/share/altasci/deploy/
 COPY --from=web-build /src/web/dist /app/web/dist
 COPY --from=legal /out/licenses /usr/share/altasci/licenses
 COPY --from=server-build /out/project-source.tar.gz /usr/share/altasci/sources/project-source.tar.gz
