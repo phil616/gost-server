@@ -47,7 +47,6 @@ if [[ -n "$existing" ]]; then
     docker rm "$container" >/dev/null
 fi
 docker run -d --name "$container" --network "$network" \
-    --add-host host.docker.internal:host-gateway \
     -p 127.0.0.1:18080:18080 \
     -p 127.0.0.1:18081:18081 \
     --env-file "$env_file" --env ALTASCI_DATA_DIR=/data \
