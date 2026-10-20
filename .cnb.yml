@@ -55,11 +55,21 @@ main:
             script: |
               set -eu
               set +x
-              # Preserve the original deployment credentials. Feed the token as
-              # literal stdin data so shell metacharacters are not evaluated.
-              docker login --username '${CNB_TOKEN_USER_NAME}' --password-stdin '${CNB_DOCKER_REGISTRY}' <<'ALTASCI_REGISTRY_TOKEN_STDIN_7CB842E5'
-              ${DEVOPS_TASKMGR_CNB_DEPLOY_TOKEN}
-              ALTASCI_REGISTRY_TOKEN_STDIN_7CB842E5
+              baoctl sync altasci-tunnel
+              # Read Docker env-file values literally; do not execute the file.
+              DEPLOY_TOKEN=''
+              line=''
+              cr=\$(printf '\r')
+              while IFS= read -r line || [ -n "\$line" ]; do
+                line=\${line%"\$cr"}
+                case "\$line" in
+                  DEPLOY_TOKEN=*) DEPLOY_TOKEN=\${line#DEPLOY_TOKEN=} ;;
+                esac
+              done < /run/baoctl/altasci-tunnel.env
+              : "\${DEPLOY_TOKEN:?环境文件缺少非空 DEPLOY_TOKEN}"
+              printf '%s\n' "\$DEPLOY_TOKEN" |
+                docker login --username '${CNB_TOKEN_USER_NAME}' --password-stdin '${CNB_DOCKER_REGISTRY}'
+              unset DEPLOY_TOKEN line cr
               image='${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_COMMIT}'
               docker pull "\$image"
               workdir=\$(mktemp -d)
@@ -75,7 +85,6 @@ main:
               docker cp "\$source_container:/usr/share/altasci/deploy/." "\$workdir/"
               docker rm --volumes "\$source_container" >/dev/null
               source_container=''
-              baoctl sync altasci-tunnel
               bash "\$workdir/deploy-docker.sh" "\$image" \
                 /run/baoctl/altasci-tunnel.env altasci-server-data bridge \
                 '${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_COMMIT}-init-client'

@@ -170,13 +170,15 @@ docker compose --env-file compose.env run --rm --no-deps server \
 
 服务器需要 Bash、Docker、`flock` 和已配置的 `baoctl`；SSH 用户需要 Docker 权限并可写 `/run/lock`。
 SSH 配置沿用 `s2-server.yml` 的 `S2_IP`、`S2_SSH_USER`、`S2_SSH_PVKEY`、`S2_SSH_PORT`。
-SSH 阶段沿用原有 `CNB_TOKEN_USER_NAME` 和 `DEVOPS_TASKMGR_CNB_DEPLOY_TOKEN`，
-在拉取镜像前自动执行 `docker login --password-stdin`，无需服务器预先手动登录。
-令牌通过带引号的 here-document 作为标准输入传递，其中的 Shell 特殊字符不会执行。
+SSH 阶段先执行 `baoctl sync altasci-tunnel`，从生成的环境文件读取 `DEPLOY_TOKEN`，
+使用原有 `CNB_TOKEN_USER_NAME` 作为用户名，在拉取镜像前执行 `docker login --password-stdin`。
+令牌按 Docker env-file 字面值读取，不执行环境文件中的 Shell 表达式；缺失或为空时停止部署。
+无需服务器预先手动登录，也不再使用 `DEVOPS_TASKMGR_CNB_DEPLOY_TOKEN`。
 
 `baoctl sync altasci-tunnel` 必须生成 `/run/baoctl/altasci-tunnel.env`，至少包含：
 
 ```dotenv
+DEPLOY_TOKEN=REPLACE_WITH_THE_REGISTRY_DEPLOY_TOKEN
 DATABASE_URL=postgres://USER:PASSWORD@DB_HOST:5432/APP_DB?sslmode=verify-full
 ALTASCI_PUBLIC_URL=https://tunnel.example.com
 ALTASCI_INIT_ADMIN_USERNAME=admin
@@ -209,7 +211,8 @@ bash deploy-docker.sh IMAGE /run/baoctl/altasci-tunnel.env altasci-server-data Y
 
 服务端口映射为 `127.0.0.1:18080:18080`、`127.0.0.1:18081:18081`。
 保留默认容器监听端口，不要在环境文件中将其改为回环监听。
-部署前完成应用镜像拉取、客户端镜像拉取和数据库连接检查，再停止旧服务。
+部署前完成应用镜像与客户端镜像准备，再停止旧服务；不单独执行数据库连通性预检查。
+初始化和迁移命令会自行连接数据库并报告错误。
 初始化或迁移失败时保留已停止的旧容器以便检查；不自动回滚数据库或重启旧版本。
 启动后最多等待 180 秒通过 Docker 健康检查，失败则整个部署失败。
 流水线不自动删除旧镜像或持久化数据。

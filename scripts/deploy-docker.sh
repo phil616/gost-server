@@ -22,19 +22,11 @@ exec 9>"$lock_dir/altasci-tunnel-deploy.lock"
 flock -x 9
 
 # The SSH bootstrap already pulled the image to extract these scripts.
-# Check dependencies and basic configuration before stopping the current release.
+# Check image availability before stopping the current release.
 docker image inspect "$image" >/dev/null
 if ! docker image inspect "$postgres_image" >/dev/null 2>&1; then
     docker pull "$postgres_image"
 fi
-docker run --rm --network "$network" --env-file "$env_file" \
-    --entrypoint /bin/sh "$postgres_image" -ec '
-        : "${DATABASE_URL:?缺少 DATABASE_URL}"
-        : "${ALTASCI_PUBLIC_URL:?缺少 ALTASCI_PUBLIC_URL}"
-        export PGCONNECT_TIMEOUT=10
-        exec psql --dbname="$DATABASE_URL" -X -qAt --set=ON_ERROR_STOP=1 --command="SELECT 1;"
-    ' >/dev/null
-
 # This project supports one Control/Edge pair. Stop it before DB writes.
 existing=$(docker container ls -a --filter "name=^/${container}$" --format '{{.ID}}')
 if [[ -n "$existing" ]]; then
