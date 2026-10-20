@@ -40,6 +40,13 @@ main:
             docker push "${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_COMMIT}"
             docker push "${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:prod"
 
+        - name: 准备 SSH 部署脚本
+          script: |
+            set -eu
+            base64 < scripts/ssh-deploy.sh | tr -d '\n'
+          exports:
+            stdout: ALTASCI_SSH_DEPLOY_SCRIPT_BASE64
+
         - name: 通过 ssh 部署后端
           image: tencentcom/ssh
           timeout: 20m
@@ -53,38 +60,13 @@ main:
             port: ${S2_SSH_PORT}
             command_timeout: 15m
             script: |
-              set -eu
-              set +x
-              baoctl sync altasci-tunnel
-              # Read Docker env-file values literally; do not execute the file.
-              DEPLOY_TOKEN=''
-              line=''
-              cr=\$(printf '\r')
-              while IFS= read -r line || [ -n "\$line" ]; do
-                line=\${line%"\$cr"}
-                case "\$line" in
-                  DEPLOY_TOKEN=*) DEPLOY_TOKEN=\${line#DEPLOY_TOKEN=} ;;
-                esac
-              done < /run/baoctl/altasci-tunnel.env
-              : "\${DEPLOY_TOKEN:?环境文件缺少非空 DEPLOY_TOKEN}"
-              printf '%s\n' "\$DEPLOY_TOKEN" |
-                docker login --username '${CNB_TOKEN_USER_NAME}' --password-stdin '${CNB_DOCKER_REGISTRY}'
-              unset DEPLOY_TOKEN line cr
-              image='${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_COMMIT}'
-              docker pull "\$image"
-              workdir=\$(mktemp -d)
-              source_container=''
-              cleanup() {
-                if [ -n "\$source_container" ]; then
-                  docker rm --volumes "\$source_container" >/dev/null
-                fi
-                rm -rf -- "\$workdir"
-              }
-              trap cleanup EXIT
-              source_container=\$(docker create "\$image")
-              docker cp "\$source_container:/usr/share/altasci/deploy/." "\$workdir/"
-              docker rm --volumes "\$source_container" >/dev/null
-              source_container=''
-              bash "\$workdir/deploy-docker.sh" "\$image" \
-                /run/baoctl/altasci-tunnel.env altasci-server-data bridge \
-                '${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_COMMIT}-init-client'
+              bash -o pipefail <<'ALTASCI_SSH_BOOTSTRAP'
+              set -e
+              printf '%s' '${ALTASCI_SSH_DEPLOY_SCRIPT_BASE64}' |
+                base64 -d |
+                bash -s -- \
+                  '${CNB_DOCKER_REGISTRY}' \
+                  '${CNB_TOKEN_USER_NAME}' \
+                  '${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_COMMIT}' \
+                  '${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${CNB_COMMIT}-init-client'
+              ALTASCI_SSH_BOOTSTRAP

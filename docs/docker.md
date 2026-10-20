@@ -162,6 +162,8 @@ docker compose --env-file compose.env run --rm --no-deps server \
 ## CNB 自动初始化与部署
 
 仓库根目录 `.cnb.yml` 在 `main.push` 构建并推送镜像，通过 SSH 部署指定 commit 的镜像。
+`scripts/ssh-deploy.sh` 从当前 checkout 编码后传到远端执行，处理 Bao 同步、仓库登录和镜像拉取；
+YAML 只替换 CNB 变量，不内嵌需要多层转义的 Shell 变量或命令替换。
 部署脚本随镜像存放在 `/usr/share/altasci/deploy/`，SSH 阶段用 `docker create/cp` 提取后执行，
 不需要服务器克隆仓库，也不需要在 Distroless 容器内运行 Bash。
 

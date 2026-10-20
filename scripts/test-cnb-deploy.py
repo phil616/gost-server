@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Exercise the CNB SSH bootstrap locally with fake Docker/baoctl commands."""
+import base64
 import json
 import os
 from pathlib import Path
@@ -49,8 +50,14 @@ elif action != 'rm':
 def main():
     root = Path(__file__).resolve().parent.parent
     configuration = yaml.safe_load((root / '.cnb.yml').read_text())
-    stage = configuration['main']['push'][0]['stages'][-1]
+    stages = configuration['main']['push'][0]['stages']
+    stage = stages[-1]
     assert stage['name'] == '通过 ssh 部署后端'
+    preparation = stages[-2]
+    assert preparation['name'] == '准备 SSH 部署脚本'
+    assert preparation['exports']['stdout'] == 'ALTASCI_SSH_DEPLOY_SCRIPT_BASE64'
+    encoded = subprocess.check_output(['sh', '-c', preparation['script']], cwd=root, text=True)
+    assert base64.b64decode(encoded, validate=True) == (root / 'scripts/ssh-deploy.sh').read_bytes()
 
     with tempfile.TemporaryDirectory(prefix='altasci-cnb-auth-test-') as directory:
         temp = Path(directory)
@@ -64,14 +71,14 @@ def main():
             'CNB_DOCKER_REGISTRY': 'registry.example',
             'CNB_REPO_SLUG_LOWERCASE': 'org/project',
             'CNB_COMMIT': 'a' * 40,
+            'ALTASCI_SSH_DEPLOY_SCRIPT_BASE64': encoded,
         }
 
         def replace(match):
             return variables[match.group(1)]
 
-        script = re.sub(r'(?<!\\)\$\{([A-Z_]+)\}', replace, stage['settings']['script'])
-        script = script.replace('\\$', '$')
-        script = script.replace('/run/baoctl/altasci-tunnel.env', str(generated_env))
+        # Substitute CNB variables only. Never repair shell escapes in the test.
+        script = re.sub(r'\$\{([A-Z_][A-Z0-9_]*)\}', replace, stage['settings']['script'])
         subprocess.run(['sh', '-n'], input=script, text=True, check=True)
         for name in ('docker', 'baoctl'):
             command = temp / name
@@ -100,12 +107,14 @@ def main():
                 PATH=str(temp) + os.pathsep + os.environ['PATH'],
                 COMMAND_TRACE=str(trace), TOKEN_CAPTURE=str(capture), DEPLOY_CAPTURE=str(deployment),
                 SOURCE_ENV=str(source_env), GENERATED_ENV=str(generated_env),
+                ALTASCI_DEPLOY_ENV_FILE=str(generated_env),
                 DEPLOY_TOKEN='stale-process-token', FAIL_LOGIN='0', FAIL_PULL='0', FAIL_SYNC='0',
             )
             if failure:
                 environment[failure] = '1'
             result = subprocess.run(['sh'], input=script, text=True, capture_output=True,
                                     env=environment, timeout=15)
+            assert trace.exists(), result.stderr
             events = [json.loads(line) for line in trace.read_text().splitlines()]
             assert events[0] == ['baoctl', 'sync', 'altasci-tunnel']
             assert not marker.exists(), 'Registry token was executed as shell code'
@@ -132,6 +141,15 @@ def main():
             if capture.exists():
                 assert capture.read_text() == token + '\n'
             print('PASS: ' + label)
+
+        # A decode failure must fail the pipeline, even if Bash receives no script.
+        trace.unlink()
+        broken_script = script.replace(encoded, '!invalid-base64!')
+        result = subprocess.run(['sh'], input=broken_script, text=True, capture_output=True,
+                                env=environment, timeout=15)
+        assert result.returncode != 0
+        assert not trace.exists()
+        print('PASS: invalid script transport fails before remote commands execute')
 
 
 if __name__ == '__main__':
