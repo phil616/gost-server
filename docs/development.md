@@ -2,7 +2,7 @@
 
 ## 工具与版本
 
-Go 工具链要求见 `go.mod`（当前 `go 1.27.0`）；前端使用 Node.js 24、npm 和锁定的 `web/package-lock.json`。Windows MSI 使用 WiX 4.0.6 及其兼容 .NET runtime。需要真实数据库时使用 PostgreSQL 18；v0.1.1 还在 Linux PostgreSQL 17.11 验证过兼容性。
+Go 工具链要求见 `go.mod`（当前 `go 1.27.3`）；前端使用 Node.js 24、npm 和锁定的 `web/package-lock.json`。Windows MSI 使用 WiX 4.0.6 及其兼容 .NET runtime。需要真实数据库时使用 PostgreSQL 18；v0.1.1 还在 Linux PostgreSQL 17.11 验证过兼容性。
 
 前端准确版本见 `web/package.json`，不要根据框架主版本自行更新锁文件。普通运行发布包无需 Go、Node、WiX。CI 配置为执行要求，不是 CI 已执行的证明。
 
@@ -53,6 +53,8 @@ npm run build
 ```
 
 开发模式 `npm run dev` 将 `/api` 代理到本机 Control 18081；Control 以 `--dev-http` 在本机开发时提供非 Secure Cookie。实际集成仍验证 HTTPS/WSS。
+
+开发服务器仅绑定回环地址（Linux 使用 `HOST=127.0.0.1 npm run dev`；PowerShell 先设置 `$env:HOST='127.0.0.1'`），不要将开发/测试服务器发布到公网或作为生产入口。依赖安全复查可运行 `npm audit` 和 `go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...`；已接受的残余风险见 [安全审查记录](security-review-2026-10-29.md)。
 
 Windows 推荐 `./scripts/build-web.ps1 -Verify`，它在系统临时目录干净安装依赖、验证、构建，收集许可，清理旧 `web/dist` 后复制新产物，避免遗留旧 chunk。使用 `-KeepWorkdir` 才保留工作目录。根项目盘的小文件性能问题不应通过提交 node_modules 或临时安装器解决。
 

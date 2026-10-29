@@ -66,6 +66,8 @@ func (s *Server) Handler() http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("X-Content-Type-Options", "nosniff")
 			w.Header().Set("Referrer-Policy", "same-origin")
+			w.Header().Set("X-Frame-Options", "DENY")
+			w.Header().Set("Content-Security-Policy", "frame-ancestors 'none'; base-uri 'self'")
 			next.ServeHTTP(w, r)
 		})
 	})
@@ -121,7 +123,25 @@ func (s *Server) Handler() http.Handler {
 // the same password verification cost as known usernames. It is not a secret.
 const dummyPasswordHash = "argon2id$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 
+func (s *Server) validOrigin(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return true // Non-browser API clients do not send Origin.
+	}
+	u, err := url.Parse(origin)
+	scheme := "https"
+	if !s.CookieSecure {
+		scheme = "http"
+	}
+	return err == nil && u.Scheme == scheme && u.Host != "" && strings.EqualFold(u.Host, r.Host) &&
+		u.User == nil && u.Path == "" && u.RawQuery == "" && !u.ForceQuery && u.Fragment == "" && u.Opaque == ""
+}
+
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
+	if !s.validOrigin(r) {
+		s.fail(w, bad(403, "invalid origin"))
+		return
+	}
 	// A bounded process-wide budget remains effective behind the single local
 	// reverse proxy without trusting arbitrary X-Forwarded-For headers.
 	if !s.loginLimiter.Allow() {
@@ -199,12 +219,9 @@ func (s *Server) auth(next http.Handler) http.Handler {
 				s.fail(w, bad(403, "invalid CSRF token"))
 				return
 			}
-			if origin := r.Header.Get("Origin"); origin != "" {
-				u, e := url.Parse(origin)
-				if e != nil || u.Host != r.Host {
-					s.fail(w, bad(403, "invalid origin"))
-					return
-				}
+			if !s.validOrigin(r) {
+				s.fail(w, bad(403, "invalid origin"))
+				return
 			}
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), userKey{}, session)))

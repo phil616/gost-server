@@ -75,7 +75,7 @@ func Listen(endpoint string) (net.Listener, error) {
 	return net.Listen("tcp", endpoint)
 }
 func Serve(ctx context.Context, ln net.Listener, h http.Handler) error {
-	server := &http.Server{Handler: h, ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 90 * time.Second}
+	server := &http.Server{Handler: h, ReadHeaderTimeout: 10 * time.Second, ReadTimeout: 30 * time.Second, IdleTimeout: 90 * time.Second}
 	go func() {
 		<-ctx.Done()
 		shutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)

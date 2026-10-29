@@ -47,8 +47,8 @@ if [[ -n "$existing" ]]; then
     docker rm "$container" >/dev/null
 fi
 docker run -d --name "$container" --network "$network" \
-    -p 0.0.0.0:18080:18080 \
-    -p 0.0.0.0:18081:18081 \
+    -p 127.0.0.1:18080:18080 \
+    -p 127.0.0.1:18081:18081 \
     --env-file "$env_file" --env ALTASCI_DATA_DIR=/data \
     --mount "type=volume,src=$volume,dst=/data" \
     --tmpfs /run/altasci:uid=65532,gid=65532,mode=0700 \

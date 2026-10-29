@@ -256,7 +256,7 @@ func (e *Engine) Start(ctx context.Context, addr string) error {
 		return err
 	}
 	ln := ws.NewListener(listener.AddrOption(addr), listener.LoggerOption(log))
-	if err := ln.Init(metadata.NewMetadata(map[string]any{"path": "/ws"})); err != nil {
+	if err := ln.Init(metadata.NewMetadata(map[string]any{"path": "/ws", "readHeaderTimeout": 10 * time.Second, "handshakeTimeout": 10 * time.Second})); err != nil {
 		return err
 	}
 	e.svc = xservice.NewService("altasci-edge", ln, h, xservice.LoggerOption(log))

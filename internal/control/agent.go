@@ -74,6 +74,16 @@ type authenticate struct {
 }
 
 func (s *Server) agentWS(w http.ResponseWriter, r *http.Request) {
+	select {
+	case s.agentAuthSlots <- struct{}{}:
+	default:
+		w.Header().Set("Retry-After", "2")
+		s.fail(w, bad(http.StatusServiceUnavailable, "too many pending device authentications"))
+		return
+	}
+	var releaseOnce sync.Once
+	release := func() { releaseOnce.Do(func() { <-s.agentAuthSlots }) }
+	defer release()
 	conn, e := websocket.Accept(w, r, nil)
 	if e != nil {
 		return
@@ -87,9 +97,9 @@ func (s *Server) agentWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	authCtx, authCancel := context.WithTimeout(ctx, 30*time.Second)
+	defer authCancel()
 	var m model.Message
 	e = wsjson.Read(authCtx, conn, &m)
-	authCancel()
 	if e != nil {
 		return
 	}
@@ -98,11 +108,13 @@ func (s *Server) agentWS(w http.ResponseWriter, r *http.Request) {
 		_ = writeMessage(ctx, conn, "error", map[string]string{"code": "authentication_failed"})
 		return
 	}
-	client, e := s.authenticate(ctx, m.Type, nonce, a)
+	client, e := s.authenticate(authCtx, m.Type, nonce, a)
 	if e != nil {
 		_ = writeMessage(ctx, conn, "error", map[string]string{"code": "authentication_failed"})
 		return
 	}
+	authCancel()
+	release() // Established devices do not consume the authentication budget.
 	pctx, pcancel := context.WithCancel(ctx)
 	p := &peer{conn: conn, queue: make(chan model.Message, 32), ctx: pctx, cancel: pcancel, lastSeen: s.Now()}
 	s.mu.Lock()

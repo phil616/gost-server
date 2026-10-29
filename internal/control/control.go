@@ -22,23 +22,24 @@ type Edge interface {
 	Snapshot(context.Context) (model.RuntimeSnapshot, error)
 }
 type Server struct {
-	Repo         store.Repository
-	Vault        *secure.Vault
-	Edge         Edge
-	PublicURL    string
-	WebDir       string
-	CookieSecure bool
-	mu           sync.Mutex
-	peers        map[string]*peer
-	edgeSnapshot model.RuntimeSnapshot
-	edgeError    string
-	cancel       context.CancelFunc
-	Now          func() time.Time
-	loginLimiter *rate.Limiter
+	Repo           store.Repository
+	Vault          *secure.Vault
+	Edge           Edge
+	PublicURL      string
+	WebDir         string
+	CookieSecure   bool
+	mu             sync.Mutex
+	peers          map[string]*peer
+	edgeSnapshot   model.RuntimeSnapshot
+	edgeError      string
+	cancel         context.CancelFunc
+	Now            func() time.Time
+	loginLimiter   *rate.Limiter
+	agentAuthSlots chan struct{}
 }
 
 func New(repo store.Repository, vault *secure.Vault, edge Edge, publicURL string) *Server {
-	return &Server{Repo: repo, Vault: vault, Edge: edge, PublicURL: publicURL, CookieSecure: true, peers: map[string]*peer{}, Now: time.Now, loginLimiter: rate.NewLimiter(rate.Every(2*time.Second), 10)}
+	return &Server{Repo: repo, Vault: vault, Edge: edge, PublicURL: publicURL, CookieSecure: true, peers: map[string]*peer{}, Now: time.Now, loginLimiter: rate.NewLimiter(rate.Every(2*time.Second), 10), agentAuthSlots: make(chan struct{}, 64)}
 }
 func (s *Server) audit(st *model.State, actor, action, resource string) {
 	a := model.Audit{ID: uuid.NewString(), Actor: actor, Action: action, Resource: resource, At: s.Now()}
