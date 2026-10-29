@@ -29,7 +29,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pion/dtls/v3 v3.1.4
-	github.com/pires/go-proxyproto v0.8.1
+	github.com/pires/go-proxyproto v0.16.0
 	github.com/prometheus/client_golang v1.19.1
 	github.com/quic-go/quic-go v0.60.0
 	github.com/quic-go/webtransport-go v0.11.1
