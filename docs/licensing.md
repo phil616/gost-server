@@ -51,8 +51,7 @@ MPL 是文件范围的 copyleft：受其覆盖的源码及修改仍按 MPL 提�
 ## 自动检查与维护
 
 ```sh
-node scripts/collect-licenses.cjs web/dist/licenses web
-node scripts/verify-licenses.cjs web/dist/licenses
+node scripts/licenses.cjs web/dist/licenses web
 ```
 
 先完整安装依赖并执行生产编译。清单缺失、未知生产许可、缺少正文、锁文件版本不符或缺少 MPL 源码都会失败。某些包把完整 MIT 正文放在 README 中，收集器保留该文件；单独一个 SPDX 字符串不足以代替正文。

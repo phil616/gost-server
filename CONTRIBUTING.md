@@ -21,7 +21,7 @@ go vet ./...
 # 在 web/ 内：npm ci、npm run typecheck、npm test、npm run build
 ```
 
-Pull Request CI 还会执行 PostgreSQL、官方 GOST、浏览器与 race 验证，以及 Windows 测试和打包。安装与长期运行另按 [验收手册](docs/system-acceptance.md) 执行。
+Pull Request CI 还会执行 PostgreSQL、官方 GOST、浏览器与 race 验证，以及 Windows 测试和打包。
 
 ## 贡献许可
 

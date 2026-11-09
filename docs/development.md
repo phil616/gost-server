@@ -2,19 +2,19 @@
 
 ## 工具与版本
 
-Go 工具链要求见 `go.mod`（当前 `go 1.27.3`）；前端使用 Node.js 24、npm 和锁定的 `web/package-lock.json`。Windows MSI 使用 WiX 4.0.6 及其兼容 .NET runtime。需要真实数据库时使用 PostgreSQL 18；v0.1.1 还在 Linux PostgreSQL 17.11 验证过兼容性。
+Go 工具链要求见 `go.mod`；前端使用 Node.js 24、npm 和锁定的 `web/package-lock.json`。Windows MSI 使用 WiX 4.0.6 及其兼容 .NET runtime，数据库使用 PostgreSQL 18。
 
 前端准确版本见 `web/package.json`，不要根据框架主版本自行更新锁文件。普通运行发布包无需 Go、Node、WiX。CI 配置为执行要求，不是 CI 已执行的证明。
 
 ## 目录
 
 ```text
-cmd/          三个交付程序
+cmd/          服务端、客户端及独立 Control/Edge 入口
 internal/     业务、运行时、存储及当前测试
 web/          React 控制台与锁文件
 deploy/       可选 systemd、反代、MSI 与日志模板
-scripts/      构建、生成、打包、验收及文档检查
-docs/         当前文档和固定版本证据
+scripts/      构建、打包、部署和 CI 检查
+docs/         使用与开发文档
 third_party/  保留许可证的 GOST 固定基线
 patches/      可审查补丁与摘要
 bin/ dist/    被忽略的本机构建/发布产物
@@ -54,9 +54,9 @@ npm run build
 
 开发模式 `npm run dev` 将 `/api` 代理到本机 Control 18081；Control 以 `--dev-http` 在本机开发时提供非 Secure Cookie。实际集成仍验证 HTTPS/WSS。
 
-安装使用 Node 24，`npm ci` 会自动应用查询解码器的 [CommonJS 兼容补丁](../web/patches/README.md)，不要通过 `--ignore-scripts` 跳过。Docker 和临时目录构建均需保留 `web/patches`。
+`npm ci` 通过 patch-package 自动应用 [query-string 兼容补丁](../web/patches/query-string+6.14.1.patch)，让旧 CommonJS 调用方读取解码器 0.5.1 的 ESM default 导出。使用 Node 24，不要跳过安装脚本；Docker 和临时目录构建需携带 `web/patches`。升级 Umi/query-string 后复查并移除不再需要的补丁。
 
-开发服务器仅绑定回环地址（Linux 使用 `HOST=127.0.0.1 npm run dev`；PowerShell 先设置 `$env:HOST='127.0.0.1'`），不要将开发/测试服务器发布到公网或作为生产入口。依赖安全复查可运行 `npm audit` 和 `go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...`；当前残余风险见 [最新依赖复查记录](security-review-2026-11-09.md)。
+开发服务器仅绑定回环地址（Linux 使用 `HOST=127.0.0.1 npm run dev`；PowerShell 先设置 `$env:HOST='127.0.0.1'`）。依赖检查和保留风险见 [安全设计](security.md#依赖检查)。
 
 Windows 推荐 `./scripts/build-web.ps1 -Verify`，它在系统临时目录干净安装依赖、验证、构建，收集许可，清理旧 `web/dist` 后复制新产物，避免遗留旧 chunk。使用 `-KeepWorkdir` 才保留工作目录。根项目盘的小文件性能问题不应通过提交 node_modules 或临时安装器解决。
 
@@ -94,10 +94,10 @@ node scripts/gost-patches.cjs
 
 前者使用 `sqlc.yaml` 及查询/迁移生成 `internal/store/db`。后者对 checksum 固定的 GOST 模块基线生成六文件补丁和 SHA-256 清单，需要 Go 模块缓存、Git 和 Node。不要整体格式化第三方代码；升级兼容流程见 [补丁说明](../patches/README.md)。
 
-`scripts/collect-licenses.cjs` 从三个交付平台链接的 Go 模块及生产 Webpack 模块收集许可和必要源码。缺少生产模块清单、实际依赖目录或完整许可时构建失败；整个 npm 安装树不等于分发清单。运行构建脚本完成收集。
+`scripts/licenses.cjs` 收集三个交付平台的 Go 模块、生产 Webpack 模块许可和必要源码，并自动校验。单独检查已有目录使用 `node scripts/licenses.cjs --verify DIRECTORY`。
 
 ## 提交前检查
 
 运行文档检查、适用的 Go/前端测试，并说明外部用例是否实际运行。修改授权、GOST、IPC 或安装动作时增加对应集成/平台验收；仅整理文档和生成物不冒充重新完成系统验收。
 
-`.env`、设备身份、数据库、`.local`、依赖目录和构建产物被忽略。有效测试和固定版本证据保留在源码中，清理规则见 [仓库维护](maintenance.md)。
+`.env`、设备身份、数据库、依赖目录和构建产物不入库，清理方式见 [仓库维护](maintenance.md)。

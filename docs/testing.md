@@ -1,28 +1,24 @@
 # 测试指南
 
-## 验证层次
-
-| 层次 | 覆盖 | 前提 | 未执行时的表达 |
-| --- | --- | --- | --- |
-| Go 单元/模块 | 模型、vault、退避、授权、配置与恢复逻辑 | Go | 不代替网络或安装测试 |
-| PostgreSQL | 迁移、事务、并发、约束及真实控制仓储 | TEST_DATABASE_URL | 缺少变量会 SKIP |
-| 官方 GOST 集成 | TCP/UDP、固定目标、WSS、控制故障和撤销 | GOST_BINARY | 缺少变量会 SKIP |
-| 前端 | TypeScript、API 客户端与注册命令测试、生产构建 | Node + npm ci | 构建不等于浏览器操作通过 |
-| 浏览器 | 真实 Chrome 的管理操作与 Provider Bind | Web dist、Chrome、Node、官方 GOST | 显式启用才执行 |
-| 系统安装 | MSI/systemd、身份、重启、修复、升级与卸载 | 可丢弃 Windows/Linux 环境 | 仅构建/读取 MSI 表不算通过 |
-| 规模/长期 | Runtime 数量、并发业务与持续资源趋势 | 显式开关、时间和外部程序 | 短测不冒充 24 小时或生产容量 |
-
-## 普通检查
+## 常规检查
 
 ```sh
 go test -count=1 ./...
 go vet ./...
 node scripts/check-docs.cjs
+node --test scripts/release-tools.test.cjs
+cd web
+npm ci --no-audit --no-fund
+npm run typecheck
+npm test
+npm run build
 ```
 
-普通 Go 运行可能跳过外部依赖用例，要检查输出，不能只报告命令退出码。当前业务测试位于 `internal/**/*_test.go`；第三方模块有其上游测试，不属于根模块 `./...` 的全量执行范围。
+Go 测试覆盖模型、认证授权、配置恢复、IPC、重试、存储与进程生命周期；前端测试覆盖 API、注册命令和解码器安全回归。第三方模块的上游测试不在根模块 `./...` 范围内。
 
-## 真实数据库与官方 GOST
+## 数据库与官方 GOST
+
+使用独立 PostgreSQL 测试库和经官方校验清单验证的 gost v3.3.0：
 
 ```sh
 export TEST_DATABASE_URL='postgres://TEST_USER:TEST_PASSWORD@127.0.0.1:5432/TEST_DB?sslmode=disable'
@@ -30,67 +26,26 @@ export GOST_BINARY='/absolute/path/to/official/gost-v3.3.0'
 go test -race -count=1 -v ./...
 ```
 
-Windows PowerShell 使用 `$env:TEST_DATABASE_URL=...`、`$env:GOST_BINARY=...`。race 需要支持的 C 工具链；本机 Windows 环境没有满足条件时可在 WSL 原生文件系统中运行。
+PowerShell 使用 `$env:TEST_DATABASE_URL=...`、`$env:GOST_BINARY=...`。数据库账号需要建 schema/DDL 权限；测试使用随机 schema 并清理。缺少变量时相关用例会跳过，不能算作集成验证通过。
 
-数据库测试创建随机 schema 并清理；账号需要对应建 schema/DDL 权限，仍应使用独立测试数据库。官方 GOST 从固定发布下载并验证 release 校验清单；测试检查 `gost v3.3.0` 版本，不能用项目修改程序互测替代官方 Visitor。
+## 浏览器与容器
 
-主要测试证据包括：
-
-- `internal/store/postgres_test.go`：迁移、回滚、并发和约束。
-- `internal/control/*_test.go`：设备签名、token 消费/恢复、TLS/幂等/CSRF、策略错误 hash、恢复版本。
-- `internal/edge/engine_test.go`：角色、TunnelID、generation、快照和活动连接撤销。
-- `internal/integration/native_test.go`：官方 TCP/UDP、固定目标及实时撤销。
-- `internal/integration/daemon_test.go`：真实 IPC Daemon 注册、TLS WSS、数据转发、控制停止/恢复。
-- `internal/retry/retry_test.go`：假时钟验证精确等待、持久状态、清零、取消和时钟回拨。
-
-## 前端与浏览器
-
-先运行 `npm ci`、typecheck、test、build。已构建 Web 和准备官方 GOST 后：
+准备 Web 产物、Chrome、Node 和 GOST_BINARY 后，执行管理控制台与真实转发验证：
 
 ```sh
 ALTASCI_BROWSER=1 go test ./internal/integration \
   -run TestDaemonWSSRegistrationDataAndControlOutage -v -count=1 -timeout 5m
 ```
 
-还需环境中的 GOST_BINARY、Node.js 和 Chrome；可通过 CHROME_BINARY 指定浏览器。该分支使用临时内存控制库与本机测试服务，完成登录、注册申请、Windows MSI 注册指引与完整 PowerShell 命令复制、Linux 平台切换、隧道创建/编辑/启停/删除、真实 Provider Bind、Visitor 展示/YAML 下载/撤销、审计、Edge 和退出。
+可通过 CHROME_BINARY 指定浏览器。浏览器脚本位于 `internal/integration/browser-smoke.mjs`，由该集成测试启动。
 
-`web/src/registration.test.ts` 检查 Windows 注册脚本保留实际服务器 origin/端口、单引号转义、服务启动与状态检查，以及拒绝异常命令格式。浏览器验证实际剪贴板内容与页面脚本一致（允许 Windows CRLF 换行）；这两项检查不代替 Windows Sandbox 内的 MSI 安装与服务生命周期验收。
-
-`scripts/browser-smoke.mjs` 也可针对独立测试控制端执行，需要 SMOKE_ORIGIN、SMOKE_USERNAME、SMOKE_PASSWORD；SMOKE_MUTATIONS=1 会变更资源，只能用于测试账号和测试环境。截图默认写入 `.local`，不作为源码必需材料。
-
-## 规模与 24 小时运行
+Docker 验证需要本机 Linux Docker Engine：
 
 ```sh
-ALTASCI_STRESS=1 go test ./internal/integration -run TestScale -v -count=1 -timeout 5m
-ALTASCI_STRESS=1 ALTASCI_SOAK_SECONDS=86400 go test ./internal/integration -run TestScale -v -count=1 -timeout 25h
-```
-
-两条都还需 GOST_BINARY。规模用例在同一 Go 测试进程内创建 100 Runtime、1000 反向连接，再由一个官方 gost 进程提供 100 并发 TCP 业务连接。默认本机 WS，不经过真实 TLS 反代；不是 100 独立主机/客户端进程测试，也不覆盖混合 UDP 长期压力。
-
-Go heap 不包含其他进程和操作系统 RSS。长期记录应包含机器条件、代理/TLS、载荷、内存/句柄/连接趋势与故障注入时间；不能将可配置 86400 参数写成已经完成 24 小时验证。
-
-## Docker 服务端验收
-
-在 Linux 本机 Docker Engine 上构建 [服务端镜像](docker.md) 后执行：
-
-```sh
-docker compose --env-file compose.env.example config --quiet
 docker build -t altasci-server:dev .
 sudo python3 scripts/test-docker.py --image altasci-server:dev
 ```
 
-脚本只使用随机命名的 Docker 网络、数据卷和独立 PostgreSQL 测试容器，不读取项目 `.env`/`compose.env`，不连接用户数据库，结束后清理本次资源。PostgreSQL 测试容器是外部依赖夹具，不加入正式 Compose 或服务端镜像。
+脚本创建并清理独立数据库、网络和数据卷，覆盖初始化、密钥保留、镜像、Web/API、容器隔离与进程恢复。MSI/systemd 的安装、升级和卸载在独立环境手动验证。
 
-验证非 root 初始化、迁移、管理员登录、Web/API、Secure Cookie/CSRF、Unix socket 策略同步、健康检查、许可/MPL 源码、无客户端/构建缓存、正常停止和重建后保留密钥/快照，以及杀死 Edge 后整个容器失败退出。还会实际运行仓库 Compose，检查带 `$` 密码的环境文件、回环端口发布、只读根文件系统和故障后自动重启。故障测试需要 root，在本机 `/proc` 中核对容器 ID 和 Edge 可执行路径后才发送信号；不支持远端 Docker daemon。
-
-`cmd/altasci-server/main_test.go` 额外验证双进程信号转发、启动失败回收、异常退出和强制停止超时；POSIX 生命周期用例在 Windows 上明确 SKIP。`internal/host/host_test.go` 验证容器业务监听的显式例外不影响内部管理接口的回环限制。镜像测试不替代外部 TLS 反代和真实 TCP/UDP 端到端验收。
-
-## CI 与系统验收
-
-`.github/workflows/ci.yml` 定义文档/前端/许可检查、Linux PostgreSQL/官方 GOST/浏览器/race/sqlc、Docker 构建与隔离容器验收，以及 Windows 测试、MSI 内容校验与完整分发 ZIP 打包。标签触发 release.yml 复用同一 CI 后发布，详见 [发布指南](releasing.md)。仓库存在 workflow 不证明已在远端执行成功；MSI 内容校验也不等于实际安装通过。Docker job 只构建与测试，不推送镜像仓库。
-
-真实平台安装使用 [系统验收手册](system-acceptance.md) 中的受控环境。当前安装测试脚本和 `internal/integration/systemfixture` 仍服务于有效验收，不能作为“旧测试”删除。早期仅探索原生 GOST 通用认证的调研探针已经由这些测试取代。
-
-## 报告格式
-
-记录版本/提交、日期、操作系统/架构、依赖与外部程序版本、具体命令、结果/跳过项、故障与修复、产物 SHA-256、未覆盖范围。原始输出放入对应 `docs/validation/VERSION`，禁止混入 token、私钥或真实密码。历史格式见 [v0.1.1](validation/0.1.1/README.md)。
+CI 执行前端、文档、许可、PostgreSQL、官方 GOST、浏览器、race、Docker 和 Windows 构建检查，详见 [发布指南](releasing.md)。测试报告说明提交版本、执行命令、结果及跳过项；原始输出留在 CI artifacts 或本地忽略目录。

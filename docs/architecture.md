@@ -77,6 +77,14 @@ sequenceDiagram
 
 每秒协调数据库当前期望状态。API 提交、Edge 生效、设备应用分别有证据。确认不仅比较 revision，也比较策略 hash。离线设备收到最新快照，不依赖重放全部历史增量。
 
+| 状态 | 含义 |
+| --- | --- |
+| accepted / pending | 变更已持久化，等待协调 |
+| operation applied | 所需 Edge 策略已确认 |
+| received_revision / applied_revision | 设备已接收 / 已应用配置 |
+| 管理 online | 管理 WSS 心跳正常 |
+| 隧道 connected | Provider 完成 Bind；目标业务健康仍需实际访问确认 |
+
 ## 数据访问和撤销
 
 Provider 凭据绑定设备、TunnelID、协议、generation，只允许 Bind。Visitor 凭据只允许 Connect 到其 TunnelID。GOST 处理多路复用；客户端 Router 强制使用平台目标，忽略 Visitor 传入目标。
@@ -101,4 +109,4 @@ Edge 独立执行凭据到期；Control/数据库停机期间，新的管理撤�
 
 当前围绕单 Control、单 Edge 和聚合事务实现。没有 leader election、跨 Edge 路由或自动故障切换。数据库写锁只保证事务串行化，不提供多控制实例管理会话协调。
 
-千隧道模拟结果不能作为生产容量承诺。需要扩展时，先测真实网络、TLS 代理、数据库与进程资源，再评估 [架构决策](decisions.md) 中的约束。
+完整快照与聚合串行写会随配置规模增加传输和锁开销。扩容前需测量真实网络、TLS 代理、数据库与进程资源，再设计资源级 SQL 和跨实例协调。

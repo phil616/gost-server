@@ -13,7 +13,7 @@ $ErrorActionPreference='Stop'
 $workspace=[IO.Path]::GetFullPath((Split-Path $PSScriptRoot -Parent))
 $workspacePrefix=$workspace+[IO.Path]::DirectorySeparatorChar
 $targets=[Collections.Generic.List[string]]::new()
-foreach($relative in @('web/src/.umi','web/src/.umi-production')) {$targets.Add($relative)}
+foreach($relative in @('web/src/.umi','web/src/.umi-production','scripts/__pycache__','security-audit')) {$targets.Add($relative)}
 if($Dependencies){$targets.Add('web/node_modules')}
 if($LocalTools){$targets.Add('.local')}
 if($BuildOutputs){foreach($relative in @('bin','dist','web/dist')){$targets.Add($relative)}}

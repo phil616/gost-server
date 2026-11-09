@@ -87,4 +87,4 @@ Control ready 证明能读取数据库；Edge live 证明内部服务运行。�
 
 前台 Ctrl+C 停止本次客户端、Visitor、Control 和 Edge。保留测试数据库、`secrets.key` 和设备身份目录可以下次继续；需要全新测试时只清理本次明确创建的状态，不删除共用数据库或现有反代配置。
 
-本流程不安装系统服务。Windows MSI、Linux systemd 的生命周期验证属于 [系统安装验收](system-acceptance.md)，不应在自己的现有环境直接运行破坏性验收脚本。
+安装为系统服务时，按 [使用指南](usage.md) 操作。

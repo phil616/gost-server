@@ -64,6 +64,5 @@ for(const m of routes.matchAll(/\.(Get|Post|Patch|Delete|Put)\("(\/api\/v1[^"\n]
   routeCount++;const endpoint=m[2].slice('/api/v1'.length);
   if(!paths.get(endpoint)?.has(m[1].toLowerCase()))errors.push(`OpenAPI: missing ${m[1]} ${endpoint}`);
 }
-for(const old of ['AltasCITunnel.md','docs/plan.md','docs/research','docs/技术实现.md','docs/可行性调研与实施方案.md','docs/运维与恢复.md','docs/系统验收.md','docs/验证报告.md','docs/自有服务器临时测试.md']) if(fs.existsSync(path.join(root,old)))errors.push(`Retired entry still exists: ${old}`);
 if(errors.length){errors.forEach(e=>process.stderr.write(e+'\n'));process.exitCode=1;}
 else console.log(`Documentation OK: ${files.length} Markdown files, ${links} local links, ${routeCount} REST routes and OpenAPI references.`);

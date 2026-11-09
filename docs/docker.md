@@ -219,12 +219,6 @@ bash deploy-docker.sh IMAGE /run/baoctl/altasci-tunnel.env altasci-server-data Y
 启动后最多等待 180 秒通过 Docker 健康检查，失败则整个部署失败。
 流水线不自动删除旧镜像或持久化数据。
 
-初始化回归检查使用独立网络、数据库与数据卷，不读取 Bao 或生产配置：
-
-```bash
-python3 scripts/test-docker-init.py --image altasci-server:dev
-```
-
 ## 非默认网络和私有数据库 CA
 
 如果使用 Linux host 网络，可以直接复用宿主机回环监听的 PostgreSQL。此模式不使用 `-p` 映射，必须同时把两个业务 listener 改为回环地址，避免监听整个宿主机网卡：

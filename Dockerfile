@@ -37,8 +37,7 @@ FROM server-build AS legal
 COPY --from=web-build /usr/local/bin/node /usr/local/bin/node
 COPY --from=web-build /src/web/node_modules /src/web/node_modules
 COPY --from=web-build /src/web/dist /src/web/dist
-RUN node scripts/collect-licenses.cjs /out/licenses /src/web && \
-    node scripts/verify-licenses.cjs /out/licenses
+RUN node scripts/licenses.cjs /out/licenses /src/web
 
 FROM ${RUNTIME_IMAGE} AS runtime
 ARG VERSION=dev

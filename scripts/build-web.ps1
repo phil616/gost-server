@@ -24,7 +24,7 @@ try {
         npm run build
         if ($LASTEXITCODE -ne 0) {throw 'Frontend build failed'}
     } finally {Pop-Location}
-    node (Join-Path $PSScriptRoot 'collect-licenses.cjs') (Join-Path $buildRoot 'dist/licenses') $buildRoot
+    node (Join-Path $PSScriptRoot 'licenses.cjs') (Join-Path $buildRoot 'dist/licenses') $buildRoot
     if ($LASTEXITCODE -ne 0) {throw 'Dependency notice collection failed'}
     $output=Join-Path $webRoot 'dist'
     & (Join-Path $PSScriptRoot 'clean.ps1') -FrontendOutput

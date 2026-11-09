@@ -73,4 +73,13 @@ Docker 模式显式允许业务入口监听容器网卡，内部管理仍固定�
 
 安全工作流在推送、PR 和每周定时执行 Windows/Linux 的 govulncheck，并检查 npm 已知高危及严重问题；检测到这些问题会使安全工作流失败。需要在 GitHub 分支保护中将其设为必需检查，才能强制阻止合并。Dependabot 同时跟踪根 Go 模块、GOST 模块、前端和 GitHub Actions。扫描结果依赖执行时的漏洞数据库，不能保证没有未知漏洞。
 
-最新依赖修复及保留项见 [2026-11-09 复查记录](security-review-2026-11-09.md)；此前代码审查的范围见 [2026-10-29 安全审查记录](security-review-2026-10-29.md)。
+手动复查：`npm audit --package-lock-only`（在 web 目录）和 `go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...`（仓库根目录）。
+
+当前保留的依赖风险（2026-11-09 复查）：
+
+| 依赖 | 保留理由 |
+| --- | --- |
+| react-router 6.30.6 | SSR 注入及不可信跳转地址问题要求升级 7.x；当前未启用 SSR，跳转使用固定路径，暂保留 Umi 的 6.x 接口 |
+| @hono/node-server、旧 esbuild、glob/minimatch | 来自未启用的构建器或开发工具，不进入生产产物；开发服务不对公网开放 |
+| deepmerge、elliptic | 低危且无已发布修复版本，仅构建工具使用 |
+| x/crypto/openpgp | 废弃公告；项目未导入该包，x/crypto 的其他包仍为必要依赖 |

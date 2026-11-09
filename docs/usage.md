@@ -2,7 +2,7 @@
 
 ## 前提
 
-Control、Edge 和反代已按 [快速开始](getting-started.md) 启动。客户端能访问外部 WSS origin，客户端自己能连接要提供的 IPv4 服务。Visitor 使用官方 gost v3.3.0，准确兼容范围见 [验证记录](validation/0.1.1/README.md)。
+Control、Edge 和反代已按 [快速开始](getting-started.md) 启动。客户端能访问外部 WSS origin，并能连接要提供的 IPv4 服务。Visitor 使用官方 gost v3.3.0。
 
 ## 以前台方式试用客户端
 

@@ -189,7 +189,7 @@ func TestDaemonWSSRegistrationDataAndControlOutage(t *testing.T) {
 		// fixtures. No administrator or service is installed on the user's host.
 		browserServer := httptest.NewServer(mux)
 		defer browserServer.Close()
-		cmd := exec.CommandContext(ctx, "node", filepath.Join(root, "scripts", "browser-smoke.mjs"))
+		cmd := exec.CommandContext(ctx, "node", filepath.Join(root, "internal", "integration", "browser-smoke.mjs"))
 		cmd.Dir = root
 		cmd.Env = append(os.Environ(), "SMOKE_ORIGIN="+browserServer.URL, "SMOKE_USERNAME=admin", "SMOKE_PASSWORD=integration-password", "SMOKE_MUTATIONS=1", "SMOKE_CLIENT_NAME=live-daemon", "SMOKE_TARGET_PORT="+port)
 		if output, err := cmd.CombinedOutput(); err != nil {

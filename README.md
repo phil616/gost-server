@@ -20,7 +20,6 @@
 | 构建与验证 | [开发指南](docs/development.md)、[测试指南](docs/testing.md) |
 | 开源许可、CI 产物和标签发版 | [许可证说明](docs/licensing.md)、[发布指南](docs/releasing.md) |
 | 运行维护 | [维护手册](docs/operations.md)、[故障排查](docs/troubleshooting.md) |
-| 设计取舍与验证范围 | [架构决策](docs/decisions.md)、[版本证据](docs/validation/README.md) |
 
 ## 交付组件
 
@@ -68,6 +67,6 @@ Go 版本见 [go.mod](go.mod)，前端使用 Node.js 24 和 [锁文件](web/pack
 
 当前支持单 Edge、内部管理员、IPv4 TCP/UDP；没有多租户、多 Edge、高可用、P2P、TUN、远程 shell 或自动更新。UDP 通过 TCP/WebSocket 承载，存在队头阻塞。
 
-v0.1.1 的 WSL 22 项、Windows Sandbox 23 项和 Linux race 记录见 [固定版本验证](docs/validation/0.1.1/README.md)。普通 Go 测试可能跳过外部依赖用例；历史结果不代替当前代码的验收。
+验证命令与外部测试依赖见 [测试指南](docs/testing.md)。
 
 依赖许可见 [第三方声明](THIRD_PARTY_NOTICES.md)，GOST 变更见 [补丁维护](patches/README.md)。

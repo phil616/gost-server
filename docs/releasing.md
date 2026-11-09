@@ -73,7 +73,7 @@ chmod +x bin/linux-amd64/altasci-control bin/linux-amd64/altasci-edge bin/linux-
 Windows 可运行 `Get-FileHash -Algorithm SHA256` 比较摘要，也可在源码检出中执行：
 
 ```powershell
-./scripts/verify-package.ps1 -Archive dist/altasci-VERSION.zip
+./scripts/package.ps1 -VerifyArchive dist/altasci-VERSION.zip
 ```
 
 SHA-256 用于检测内容损坏/变化，不等同于独立签名或来源证明。当前 MSI/exe 未代码签名，CI 不修改机器签名策略。
@@ -106,6 +106,4 @@ Remove-Item Env:GOOS,Env:GOARCH,Env:CGO_ENABLED
 
 ## 测试边界
 
-CI Linux 配置 PostgreSQL 18、官方 GOST v3.3.0、Chrome、真实 Web 与 Go race；Windows 使用官方 GOST 跑测试后构建 MSI。Linux arm64 是交叉编译产物，当前没有原生 arm64 运行验证。GitHub Windows runner 不执行安装服务的 MSI 生命周期测试；按 [系统验收](system-acceptance.md) 在可丢弃环境单独验证。
-
-本次本地实施的验证记录见 [开源发布流程验证](validation/open-source-release.md)，不要把它或 v0.1.1 历史验证当成远端 Actions 已执行的记录。
+CI Linux 配置 PostgreSQL 18、官方 GOST v3.3.0、Chrome、真实 Web 与 Go race；Windows 使用官方 GOST 跑测试后构建 MSI。Linux arm64 是交叉编译产物。MSI 构建与打包会自动校验载荷及许可证，但不执行服务安装；安装、升级与卸载需在独立测试环境验证。

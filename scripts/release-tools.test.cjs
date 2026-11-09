@@ -25,7 +25,7 @@ test('license gate rejects AGPL, missing notices, unavailable and tampered MPL s
     ];
     function check(dependencies) {
       fs.writeFileSync(path.join(directory,'dependency-inventory.json'),JSON.stringify({schemaVersion:2,dependencies}));
-      return spawnSync(process.execPath,[path.join(__dirname,'verify-licenses.cjs'),directory],{encoding:'utf8'});
+      return spawnSync(process.execPath,[path.join(__dirname,'licenses.cjs'),'--verify',directory],{encoding:'utf8'});
     }
     assert.equal(check(deps).status,0);
     assert.match(check([deps[0],{...deps[1],license:'AGPL-3.0-only'}]).stderr,/Unreviewed dependency/);
