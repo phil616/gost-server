@@ -10,6 +10,7 @@ try {
     $env:ALTASCI_VERSION=$Version
     foreach ($file in @('package.json','package-lock.json','.npmrc','.umirc.ts','tsconfig.json','license-manifest-plugin.cjs')) {Copy-Item -LiteralPath (Join-Path $webRoot $file) -Destination $buildRoot}
     Copy-Item -LiteralPath (Join-Path $webRoot 'src') -Destination (Join-Path $buildRoot 'src') -Recurse
+    Copy-Item -LiteralPath (Join-Path $webRoot 'patches') -Destination (Join-Path $buildRoot 'patches') -Recurse
     Push-Location -LiteralPath $buildRoot
     try {
         npm ci --no-audit --no-fund

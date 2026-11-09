@@ -54,7 +54,9 @@ npm run build
 
 开发模式 `npm run dev` 将 `/api` 代理到本机 Control 18081；Control 以 `--dev-http` 在本机开发时提供非 Secure Cookie。实际集成仍验证 HTTPS/WSS。
 
-开发服务器仅绑定回环地址（Linux 使用 `HOST=127.0.0.1 npm run dev`；PowerShell 先设置 `$env:HOST='127.0.0.1'`），不要将开发/测试服务器发布到公网或作为生产入口。依赖安全复查可运行 `npm audit` 和 `go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...`；已接受的残余风险见 [安全审查记录](security-review-2026-10-29.md)。
+安装使用 Node 24，`npm ci` 会自动应用查询解码器的 [CommonJS 兼容补丁](../web/patches/README.md)，不要通过 `--ignore-scripts` 跳过。Docker 和临时目录构建均需保留 `web/patches`。
+
+开发服务器仅绑定回环地址（Linux 使用 `HOST=127.0.0.1 npm run dev`；PowerShell 先设置 `$env:HOST='127.0.0.1'`），不要将开发/测试服务器发布到公网或作为生产入口。依赖安全复查可运行 `npm audit` 和 `go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...`；当前残余风险见 [最新依赖复查记录](security-review-2026-11-09.md)。
 
 Windows 推荐 `./scripts/build-web.ps1 -Verify`，它在系统临时目录干净安装依赖、验证、构建，收集许可，清理旧 `web/dist` 后复制新产物，避免遗留旧 chunk。使用 `-KeepWorkdir` 才保留工作目录。根项目盘的小文件性能问题不应通过提交 node_modules 或临时安装器解决。
 

@@ -6,6 +6,7 @@ ARG RUNTIME_IMAGE=gcr.io/distroless/static-debian13:nonroot
 FROM --platform=$BUILDPLATFORM ${NODE_IMAGE} AS web-build
 WORKDIR /src/web
 COPY web/package.json web/package-lock.json web/.npmrc ./
+COPY web/patches ./patches
 RUN npm ci --no-audit --no-fund
 COPY web/.umirc.ts web/tsconfig.json web/license-manifest-plugin.cjs ./
 COPY web/src ./src

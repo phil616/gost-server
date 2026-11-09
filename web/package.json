@@ -5,6 +5,7 @@
   "license": "MIT",
   "author": "@phil616",
   "scripts": {
+    "postinstall": "patch-package --error-on-fail",
     "dev": "max dev",
     "build": "max build",
     "typecheck": "tsc --noEmit",
@@ -21,6 +22,7 @@
   "devDependencies": {
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
+    "patch-package": "8.0.1",
     "typescript": "7.0.2",
     "vitest": "4.1.12"
   },
@@ -45,6 +47,8 @@
     "react-router": "6.30.6",
     "react-router-dom": "6.30.6",
     "fast-uri": "3.1.9",
+    "decode-uri-component": "0.5.1",
+    "follow-redirects": "1.16.3",
     "postcss-selector-parser@<6.1.5": "6.1.5"
   }
 }
