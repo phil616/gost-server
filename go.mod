@@ -15,7 +15,7 @@ require (
 	github.com/pressly/goose/v3 v3.24.3
 	golang.org/x/crypto v0.58.0
 	golang.org/x/sys v0.49.0
-	golang.org/x/time v0.12.0
+	golang.org/x/time v0.16.0
 )
 
 require (
